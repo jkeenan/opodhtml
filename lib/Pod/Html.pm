@@ -16,6 +16,13 @@ use File::Spec;
 use File::Spec::Unix;
 use Getopt::Long;
 use Pod::Simple::Search;
+use lib ( './lib' );
+#use Pod::Simple::XHTML::LocalPodLinks;
+use Pod::Html::Auxiliary qw(
+    usage
+);
+#    html_escape
+#    unixify
 BEGIN {
     if($Config{d_setlocale}) {
         require locale; import locale; # make \w work right in non-ASCII lands
@@ -438,53 +445,53 @@ HTMLFOOT
     close $fhout or die "Failed to close $Htmlfile: $!";
     chmod 0644, $Htmlfile unless $Htmlfile eq '-';
 }
-
-##############################################################################
-
-sub usage {
-    my $podfile = shift;
-    warn "$0: $podfile: @_\n" if @_;
-    die <<END_OF_USAGE;
-Usage:  $0 --help --htmldir=<name> --htmlroot=<URL>
-           --infile=<name> --outfile=<name>
-           --podpath=<name>:...:<name> --podroot=<name>
-           --cachedir=<name> --flush --recurse --norecurse
-           --quiet --noquiet --verbose --noverbose
-           --index --noindex --backlink --nobacklink
-           --header --noheader --poderrors --nopoderrors
-           --css=<URL> --title=<name>
-
-  --[no]backlink  - turn =head1 directives into links pointing to the top of
-                      the page (off by default).
-  --cachedir      - directory for the directory cache files.
-  --css           - stylesheet URL
-  --flush         - flushes the directory cache.
-  --[no]header    - produce block header/footer (default is no headers).
-  --help          - prints this message.
-  --htmldir       - directory for resulting HTML files.
-  --htmlroot      - http-server base directory from which all relative paths
-                      in podpath stem (default is /).
-  --[no]index     - generate an index at the top of the resulting html
-                      (default behaviour).
-  --infile        - filename for the pod to convert (input taken from stdin
-                      by default).
-  --outfile       - filename for the resulting html file (output sent to
-                      stdout by default).
-  --[no]poderrors - include a POD ERRORS section in the output if there were 
-                      any POD errors in the input (default behavior).
-  --podpath       - colon-separated list of directories containing library
-                      pods (empty by default).
-  --podroot       - filesystem base directory from which all relative paths
-                      in podpath stem (default is .).
-  --[no]quiet     - suppress some benign warning messages (default is off).
-  --[no]recurse   - recurse on those subdirectories listed in podpath
-                      (default behaviour).
-  --title         - title that will appear in resulting html file.
-  --[no]verbose   - self-explanatory (off by default).
-
-END_OF_USAGE
-
-}
+#
+###############################################################################
+#
+#sub usage {
+#    my $podfile = shift;
+#    warn "$0: $podfile: @_\n" if @_;
+#    die <<END_OF_USAGE;
+#Usage:  $0 --help --htmldir=<name> --htmlroot=<URL>
+#           --infile=<name> --outfile=<name>
+#           --podpath=<name>:...:<name> --podroot=<name>
+#           --cachedir=<name> --flush --recurse --norecurse
+#           --quiet --noquiet --verbose --noverbose
+#           --index --noindex --backlink --nobacklink
+#           --header --noheader --poderrors --nopoderrors
+#           --css=<URL> --title=<name>
+#
+#  --[no]backlink  - turn =head1 directives into links pointing to the top of
+#                      the page (off by default).
+#  --cachedir      - directory for the directory cache files.
+#  --css           - stylesheet URL
+#  --flush         - flushes the directory cache.
+#  --[no]header    - produce block header/footer (default is no headers).
+#  --help          - prints this message.
+#  --htmldir       - directory for resulting HTML files.
+#  --htmlroot      - http-server base directory from which all relative paths
+#                      in podpath stem (default is /).
+#  --[no]index     - generate an index at the top of the resulting html
+#                      (default behaviour).
+#  --infile        - filename for the pod to convert (input taken from stdin
+#                      by default).
+#  --outfile       - filename for the resulting html file (output sent to
+#                      stdout by default).
+#  --[no]poderrors - include a POD ERRORS section in the output if there were 
+#                      any POD errors in the input (default behavior).
+#  --podpath       - colon-separated list of directories containing library
+#                      pods (empty by default).
+#  --podroot       - filesystem base directory from which all relative paths
+#                      in podpath stem (default is .).
+#  --[no]quiet     - suppress some benign warning messages (default is off).
+#  --[no]recurse   - recurse on those subdirectories listed in podpath
+#                      (default behaviour).
+#  --title         - title that will appear in resulting html file.
+#  --[no]verbose   - self-explanatory (off by default).
+#
+#END_OF_USAGE
+#
+#}
 
 sub parse_command_line {
     my ($opt_backlink,$opt_cachedir,$opt_css,$opt_flush,$opt_header,
