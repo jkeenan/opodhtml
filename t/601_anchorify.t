@@ -1,6 +1,6 @@
 # -*- perl -*-
 use strict;
-use Pod::Html::Auxiliary qw( anchorify );
+use Pod::Html qw( anchorify );
 use Test::More tests => 1;
 
 my @filedata;
@@ -37,8 +37,8 @@ my %expected = map { $_ => 1 } qw(
     has_hyphen_and_space
 );
 is_deeply(
-    { %heads },
-    { %expected },
+    \%heads,
+    \%expected,
     "Got expected POD heads"
 );
 
