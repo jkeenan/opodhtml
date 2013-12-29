@@ -221,7 +221,6 @@ This program is distributed under the Artistic License.
 
 =cut
 
-my @Podpath;
 my %Pages = ();                 # associative array used to find the location
                                 #   of pages referenced by L<> links.
 
@@ -245,10 +244,6 @@ my $self = { map { $_ => undef } qw(
     Header
 ) };
 $self->{Curdir} = File::Spec->curdir;
-#$self->{Podpath} = [];
-#$self->{Pages} = {};
-
-#init_globals();
 
 sub init_globals {
     $self->{Cachedir} = ".";            # The directory to which directory caches
@@ -268,7 +263,7 @@ sub init_globals {
 
     $self->{Poderrors} = 1;
     $self->{Podfile} = "";              # read from stdin by default
-    @Podpath = ();              # list of directories containing library pods.
+    $self->{Podpath} = [];              # list of directories containing library pods.
     $self->{Podroot} = $self->{Curdir};         # filesystem base directory from which all
                                 #   relative paths in $podpath stem.
     $self->{Css} = '';                  # Cascading style sheet
@@ -308,7 +303,7 @@ sub pod2html {
     }
 
     # load or generate/cache %Pages
-    unless (get_cache($self->{Dircache}, \@Podpath, $self->{Podroot}, $self->{Recurse})) {
+    unless (get_cache($self->{Dircache}, $self->{Podpath}, $self->{Podroot}, $self->{Recurse})) {
         # generate %Pages
         my $pwd = getcwd();
         chdir($self->{Podroot}) ||
@@ -318,7 +313,7 @@ sub pod2html {
         # - callback used to remove Podroot and extension from each file
         # - laborious to allow '.' in dirnames (e.g., /usr/share/perl/5.14.1)
         Pod::Simple::Search->new->inc(0)->verbose($self->{Verbose})->laborious(1)
-            ->callback(\&_save_page)->recurse($self->{Recurse})->survey(@Podpath);
+            ->callback(\&_save_page)->recurse($self->{Recurse})->survey(@{$self->{Podpath}});
 
         chdir($pwd) || die "$0: error changing to directory $pwd: $!\n";
 
@@ -327,7 +322,7 @@ sub pod2html {
         open my $cache, '>', $self->{Dircache}
             or die "$0: error open $self->{Dircache} for writing: $!\n";
 
-        print $cache join(":", @Podpath) . "\n$self->{Podroot}\n";
+        print $cache join(":", @{$self->{Podpath}}) . "\n$self->{Podroot}\n";
         my $_updirs_only = ($self->{Podroot} =~ /\.\./) && !($self->{Podroot} =~ /[^\.\\\/]/);
         foreach my $key (keys %Pages) {
             if($_updirs_only) {
@@ -474,7 +469,7 @@ sub parse_command_line {
     usage("-") if defined $opt_help;    # see if the user asked for help
     $opt_help = "";                     # just to make -w shut-up.
 
-    @Podpath  = split(":", $opt_podpath) if defined $opt_podpath;
+    @{$self->{Podpath}}  = split(":", $opt_podpath) if defined $opt_podpath;
     warn "--libpods is no longer supported" if defined $opt_libpods;
 
     $self->{Backlink}  =          $opt_backlink   if defined $opt_backlink;
