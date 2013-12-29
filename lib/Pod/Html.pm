@@ -5,8 +5,7 @@ require Exporter;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 $VERSION = 1.21;
 @ISA = qw(Exporter);
-@EXPORT = qw(pod2html htmlify);
-@EXPORT_OK = qw(anchorify);
+@EXPORT = qw(pod2html);
 
 use Carp;
 use Config;
@@ -23,8 +22,8 @@ use Pod::Html::Auxiliary qw(
     html_escape
     htmlify
     anchorify
+    unixify
 );
-#    unixify
 
 BEGIN {
     if($Config{d_setlocale}) {
@@ -298,7 +297,7 @@ sub pod2html {
         # be used throughout.
         #$Htmlfileurl = "$Htmldir/" . substr( $Htmlfile, length( $Htmldir ) + 1);
         # Is the above not just "$Htmlfileurl = $Htmlfile"?
-        $Htmlfileurl = Pod::Html::_unixify($Htmlfile);
+        $Htmlfileurl = unixify($Htmlfile);
 
     }
 
@@ -473,16 +472,16 @@ sub parse_command_line {
     warn "--libpods is no longer supported" if defined $opt_libpods;
 
     $Backlink  =          $opt_backlink   if defined $opt_backlink;
-    $Cachedir  = _unixify($opt_cachedir)  if defined $opt_cachedir;
+    $Cachedir  = unixify($opt_cachedir)  if defined $opt_cachedir;
     $Css       =          $opt_css        if defined $opt_css;
     $Header    =          $opt_header     if defined $opt_header;
-    $Htmldir   = _unixify($opt_htmldir)   if defined $opt_htmldir;
-    $Htmlroot  = _unixify($opt_htmlroot)  if defined $opt_htmlroot;
+    $Htmldir   = unixify($opt_htmldir)   if defined $opt_htmldir;
+    $Htmlroot  = unixify($opt_htmlroot)  if defined $opt_htmlroot;
     $Doindex   =          $opt_index      if defined $opt_index;
-    $Podfile   = _unixify($opt_infile)    if defined $opt_infile;
-    $Htmlfile  = _unixify($opt_outfile)   if defined $opt_outfile;
+    $Podfile   = unixify($opt_infile)    if defined $opt_infile;
+    $Htmlfile  = unixify($opt_outfile)   if defined $opt_outfile;
     $Poderrors =          $opt_poderrors  if defined $opt_poderrors;
-    $Podroot   = _unixify($opt_podroot)   if defined $opt_podroot;
+    $Podroot   = unixify($opt_podroot)   if defined $opt_podroot;
     $Quiet     =          $opt_quiet      if defined $opt_quiet;
     $Recurse   =          $opt_recurse    if defined $opt_recurse;
     $Title     =          $opt_title      if defined $opt_title;
@@ -580,39 +579,10 @@ sub _save_page {
                                      File::Spec->canonpath($Podroot));
 
     # Convert path to unix style path
-    $modspec = Pod::Html::_unixify($modspec);
+    $modspec = unixify($modspec);
 
     my ($file, $dir) = fileparse($modspec, qr/\.[^.]*/); # strip .ext
     $Pages{$modname} = $dir.$file;
-}
-
-sub _unixify {
-    my $full_path = shift;
-    return '' unless $full_path;
-    return $full_path if $full_path eq '/';
-
-    my ($vol, $dirs, $file) = File::Spec->splitpath($full_path);
-    my @dirs = $dirs eq File::Spec->curdir()
-               ? (File::Spec::Unix->curdir())
-               : File::Spec->splitdir($dirs);
-    if (defined($vol) && $vol) {
-        $vol =~ s/:$// if $^O eq 'VMS';
-        $vol = uc $vol if $^O eq 'MSWin32';
-
-        if( $dirs[0] ) {
-            unshift @dirs, $vol;
-        }
-        else {
-            $dirs[0] = $vol;
-        }
-    }
-    unshift @dirs, '' if File::Spec->file_name_is_absolute($full_path);
-    return $file unless scalar(@dirs);
-    $full_path = File::Spec::Unix->catfile(File::Spec::Unix->catdir(@dirs),
-                                           $file);
-    $full_path =~ s|^\/|| if $^O eq 'MSWin32'; # C:/foo works, /C:/foo doesn't
-    $full_path =~ s/\^\././g if $^O eq 'VMS'; # unescape dots
-    return $full_path;
 }
 
 package Pod::Simple::XHTML::LocalPodLinks;
@@ -622,6 +592,10 @@ use parent 'Pod::Simple::XHTML';
 
 use File::Spec;
 use File::Spec::Unix;
+use lib ( './lib' );
+use Pod::Html::Auxiliary qw(
+    unixify
+);
 
 __PACKAGE__->_accessorize(
  'htmldir',
@@ -675,7 +649,7 @@ sub resolve_pod_page_link {
         $path = $self->pages->{$to};
     }
 
-    my $url = File::Spec::Unix->catfile(Pod::Html::_unixify($self->htmlroot),
+    my $url = File::Spec::Unix->catfile(unixify($self->htmlroot),
                                         $path);
 
     if ($self->htmlfileurl ne '') {
@@ -683,7 +657,7 @@ sub resolve_pod_page_link {
         # $self->htmldir needs to be prepended to link to get the absolute path
         # that will be relativized
         $url = relativize_url(
-            File::Spec::Unix->catdir(Pod::Html::_unixify($self->htmldir), $url),
+            File::Spec::Unix->catdir(unixify($self->htmldir), $url),
             $self->htmlfileurl # already unixified
         );
     }

@@ -1,5 +1,6 @@
 require Cwd;
 require Pod::Html;
+use Pod::Html::Auxiliary qw( unixify );
 require Config;
 use File::Spec::Functions ':ALL';
 use File::Path 'remove_tree';
@@ -31,7 +32,7 @@ sub rem_test_dir {
 sub convert_n_test {
     my($podfile, $testname, @p2h_args) = @_;
 
-    my $cwd = Pod::Html::_unixify( Cwd::cwd() );
+    my $cwd = unixify( Cwd::cwd() );
     my ($vol, $dir) = splitpath($cwd, 1);
     my @dirs = splitdir($dir);
     shift @dirs if $dirs[0] eq '';

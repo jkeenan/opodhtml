@@ -10,14 +10,14 @@ use vars qw($VERSION @ISA @EXPORT_OK);
     html_escape
     htmlify
     anchorify
+    unixify
 );
 #    parse_command_line
-#    unixify
 #    relativize_url
 
 #use Config;
-#use File::Spec;
-#use File::Spec::Unix;
+use File::Spec;
+use File::Spec::Unix;
 #use Getopt::Long;
 #use locale; # make \w work right in non-ASCII lands
 
@@ -173,6 +173,35 @@ sub anchorify {
     $anchor = htmlify($anchor);
     $anchor =~ s/\W/_/g;
     return $anchor;
+}
+
+sub unixify {
+    my $full_path = shift;
+    return '' unless $full_path;
+    return $full_path if $full_path eq '/';
+
+    my ($vol, $dirs, $file) = File::Spec->splitpath($full_path);
+    my @dirs = $dirs eq File::Spec->curdir()
+               ? (File::Spec::Unix->curdir())
+               : File::Spec->splitdir($dirs);
+    if (defined($vol) && $vol) {
+        $vol =~ s/:$// if $^O eq 'VMS';
+        $vol = uc $vol if $^O eq 'MSWin32';
+
+        if( $dirs[0] ) {
+            unshift @dirs, $vol;
+        }
+        else {
+            $dirs[0] = $vol;
+        }
+    }
+    unshift @dirs, '' if File::Spec->file_name_is_absolute($full_path);
+    return $file unless scalar(@dirs);
+    $full_path = File::Spec::Unix->catfile(File::Spec::Unix->catdir(@dirs),
+                                           $file);
+    $full_path =~ s|^\/|| if $^O eq 'MSWin32'; # C:/foo works, /C:/foo doesn't
+    $full_path =~ s/\^\././g if $^O eq 'VMS'; # unescape dots
+    return $full_path;
 }
 
 1;
