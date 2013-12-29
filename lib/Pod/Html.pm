@@ -274,6 +274,7 @@ sub init_globals {
     $self->{Backlink} = 0;              # no backlinks added by default
     $self->{Header} = 0;                # produce block header/footer
     $self->{Title} = '';                # title to give the pod(s)
+    $self->{Saved_Cache_Key} = '';
 }
 
 sub pod2html {
@@ -303,7 +304,7 @@ sub pod2html {
     }
 
     # load or generate/cache %Pages
-    unless (get_cache($self->{Dircache}, $self->{Podpath}, $self->{Podroot}, $self->{Recurse})) {
+    unless (get_cache($self)) {
         # generate %Pages
         my $pwd = getcwd();
         chdir($self->{Podroot}) ||
@@ -496,34 +497,39 @@ sub parse_command_line {
     }
 }
 
-my $Saved_Cache_Key;
-
 sub get_cache {
-    my($dircache, $podpath, $podroot, $recurse) = @_;
+    my $self = shift;
     my @cache_key_args = @_;
 
     # A first-level cache:
     # Don't bother reading the cache files if they still apply
     # and haven't changed since we last read them.
 
-    my $this_cache_key = cache_key(@cache_key_args);
-    return 1 if $Saved_Cache_Key and $this_cache_key eq $Saved_Cache_Key;
-    $Saved_Cache_Key = $this_cache_key;
+    my $this_cache_key = cache_key($self);
+    return 1 if $self->{Saved_Cache_Key}
+        and $this_cache_key eq $self->{Saved_Cache_Key};
+    $self->{Saved_Cache_Key} = $this_cache_key;
 
     # load the cache of %Pages if possible.  $tests will be
     # non-zero if successful.
     my $tests = 0;
-    if (-f $dircache) {
+    if (-f $self->{Dircache}) {
         warn "scanning for directory cache\n" if $self->{Verbose};
-        $tests = load_cache($dircache, $podpath, $podroot);
+        $tests = load_cache($self);
     }
 
     return $tests;
 }
 
 sub cache_key {
-    my($dircache, $podpath, $podroot, $recurse) = @_;
-    return join('!',$dircache,$recurse,@$podpath,$podroot,stat($dircache));
+    my $self = shift;
+    return join('!' => (
+        $self->{Dircache},
+        $self->{Recurse},
+        @{$self->{Podpath}},
+        $self->{Podroot},
+        stat($self->{Dircache}),
+    ) );
 }
 
 #
@@ -531,24 +537,24 @@ sub cache_key {
 #  cache of %Pages.  if so, it loads them and returns a non-zero value.
 #
 sub load_cache {
-    my($dircache, $podpath, $podroot) = @_;
+    my $self = shift;
     my $tests = 0;
     local $_;
 
     warn "scanning for directory cache\n" if $self->{Verbose};
-    open(my $cachefh, '<', $dircache) ||
-        die "$0: error opening $dircache for reading: $!\n";
+    open(my $cachefh, '<', $self->{Dircache}) ||
+        die "$0: error opening $self->{Dircache} for reading: $!\n";
     $/ = "\n";
 
     # is it the same podpath?
     $_ = <$cachefh>;
     chomp($_);
-    $tests++ if (join(":", @$podpath) eq $_);
+    $tests++ if (join(":", @{$self->{Podpath}}) eq $_);
 
     # is it the same podroot?
     $_ = <$cachefh>;
     chomp($_);
-    $tests++ if ($podroot eq $_);
+    $tests++ if ($self->{Podroot} eq $_);
 
     # load the cache if its good
     if ($tests != 2) {
