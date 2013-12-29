@@ -37,5 +37,6 @@ t/poderr.pod
 t/poderr.t
 t/podnoerr.pod
 t/podnoerr.t
+t/601_anchorify.t
 testdir/perlpodspec-copy.pod
 testdir/perlvar-copy.pod

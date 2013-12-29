@@ -7,13 +7,13 @@ use vars qw($VERSION @ISA @EXPORT_OK);
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(
     usage
+    html_escape
+    htmlify
+    anchorify
 );
 #    parse_command_line
 #    unixify
 #    relativize_url
-#    html_escape
-#    htmlify
-#    anchorify
 
 #use Config;
 #use File::Spec;
@@ -94,36 +94,6 @@ END_OF_USAGE
 
 }
 
-#sub unixify {
-#    my $full_path = shift;
-#    return '' unless $full_path;
-#    return $full_path if $full_path eq '/';
-#
-#    my ($vol, $dirs, $file) = File::Spec->splitpath($full_path);
-#    my @dirs = $dirs eq File::Spec->curdir()
-#               ? (File::Spec::Unix->curdir())
-#               : File::Spec->splitdir($dirs);
-#    if ($vol) {
-#        $vol =~ s/:$// if $^O eq 'VMS';
-#        $vol = uc $vol if $^O eq 'MSWin32';
-#
-#        if( $dirs[0] ) {
-#            unshift @dirs, $vol;
-#        }
-#        else {
-#            $dirs[0] = $vol;
-#        }
-#    }
-#    unshift @dirs, '' if File::Spec->file_name_is_absolute($full_path);
-#    return $file unless scalar(@dirs);
-#    $full_path = File::Spec::Unix->catfile(
-#        File::Spec::Unix->catdir(@dirs),
-#        $file,
-#    );
-#    $full_path =~ s|^\/|| if $^O eq 'MSWin32'; # C:/foo works, /C:/foo doesn't
-#    return $full_path;
-#}
-#
 ## relativize_url - convert an absolute URL to one relative to a base URL.
 ## Assumes both end in a filename.
 ##
@@ -153,54 +123,56 @@ END_OF_USAGE
 #    return $rel_path;
 #}
 ##
-## html_escape: make text safe for HTML
-##
-#sub html_escape {
-#    my $rest = $_[0];
-#    $rest   =~ s/&/&amp;/g;
-#    $rest   =~ s/</&lt;/g;
-#    $rest   =~ s/>/&gt;/g;
-#    $rest   =~ s/"/&quot;/g;
-#    # &apos; is only in XHTML, not HTML4.  Be conservative
-#    #$rest   =~ s/'/&apos;/g;
-#    return $rest;
-#}
+
 #
-#=head2 htmlify
+# html_escape: make text safe for HTML
 #
-#    htmlify($heading);
-#
-#Converts a pod section specification to a suitable section specification
-#for HTML. Note that we keep spaces and special characters except
-#C<", ?> (Netscape problem) and the hyphen (writer's problem...).
-#
-#=cut
-#
-#sub htmlify {
-#    my( $heading) = @_;
-#    $heading =~ s/(\s+)/ /g;
-#    $heading =~ s/\s+\Z//;
-#    $heading =~ s/\A\s+//;
-#    # The hyphen is a disgrace to the English language.
-#    # $heading =~ s/[-"?]//g;
-#    $heading =~ s/["?]//g;
-#    $heading = lc( $heading );
-#    return $heading;
-#}
-#=head2 anchorify
-#
-#    anchorify(@heading);
-#
-#Similar to C<htmlify()>, but turns non-alphanumerics into underscores.  Note
-#that C<anchorify()> is not exported by default.
-#
-#=cut
-#
-#sub anchorify {
-#    my ($anchor) = @_;
-#    $anchor = htmlify($anchor);
-#    $anchor =~ s/\W/_/g;
-#    return $anchor;
-#}
+sub html_escape {
+    my $rest = $_[0];
+    $rest   =~ s/&/&amp;/g;
+    $rest   =~ s/</&lt;/g;
+    $rest   =~ s/>/&gt;/g;
+    $rest   =~ s/"/&quot;/g;
+    # &apos; is only in XHTML, not HTML4.  Be conservative
+    #$rest   =~ s/'/&apos;/g;
+    return $rest;
+}
+
+=head2 htmlify
+
+    htmlify($heading);
+
+Converts a pod section specification to a suitable section specification
+for HTML. Note that we keep spaces and special characters except
+C<", ?> (Netscape problem) and the hyphen (writer's problem...).
+
+=cut
+
+sub htmlify {
+    my( $heading) = @_;
+    $heading =~ s/(\s+)/ /g;
+    $heading =~ s/\s+\Z//;
+    $heading =~ s/\A\s+//;
+    # The hyphen is a disgrace to the English language.
+    # $heading =~ s/[-"?]//g;
+    $heading =~ s/["?]//g;
+    $heading = lc( $heading );
+    return $heading;
+}
+
+=head2 anchorify
+
+    anchorify(@heading);
+
+Similar to C<htmlify()>, but turns non-alphanumerics into underscores.
+
+=cut
+
+sub anchorify {
+    my ($anchor) = @_;
+    $anchor = htmlify($anchor);
+    $anchor =~ s/\W/_/g;
+    return $anchor;
+}
 
 1;
