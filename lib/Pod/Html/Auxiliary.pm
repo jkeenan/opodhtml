@@ -11,9 +11,9 @@ use vars qw($VERSION @ISA @EXPORT_OK);
     htmlify
     anchorify
     unixify
+    relativize_url
 );
 #    parse_command_line
-#    relativize_url
 
 #use Config;
 use File::Spec;
@@ -202,6 +202,36 @@ sub unixify {
     $full_path =~ s|^\/|| if $^O eq 'MSWin32'; # C:/foo works, /C:/foo doesn't
     $full_path =~ s/\^\././g if $^O eq 'VMS'; # unescape dots
     return $full_path;
+}
+
+#
+# relativize_url - convert an absolute URL to one relative to a base URL.
+# Assumes both end in a filename.
+#
+sub relativize_url {
+    my ($dest, $source) = @_;
+
+    # Remove each file from its path
+    my ($dest_volume, $dest_directory, $dest_file) =
+        File::Spec::Unix->splitpath( $dest );
+    $dest = File::Spec::Unix->catpath( $dest_volume, $dest_directory, '' );
+
+    my ($source_volume, $source_directory, $source_file) =
+        File::Spec::Unix->splitpath( $source );
+    $source = File::Spec::Unix->catpath( $source_volume, $source_directory, '' );
+
+    my $rel_path = '';
+    if ($dest ne '') {
+       $rel_path = File::Spec::Unix->abs2rel( $dest, $source );
+    }
+
+    if ($rel_path ne '' && substr( $rel_path, -1 ) ne '/') {
+        $rel_path .= "/$dest_file";
+    } else {
+        $rel_path .= "$dest_file";
+    }
+
+    return $rel_path;
 }
 
 1;
