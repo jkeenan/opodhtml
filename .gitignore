@@ -1,1 +1,13 @@
++# .gitignore for Pod-Html
 /pod2html
+/MANIFEST.bak
+/Makefile
+/Makefile.old
+/MYMETA.json
+/MYMETA.yml
+/Pod-Html-*.tar.gz
+/blib
+/pm_to_blib
+/cover_db/
+/coverage.txt
+/.build
