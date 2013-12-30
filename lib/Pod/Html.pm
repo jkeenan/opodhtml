@@ -338,19 +338,7 @@ sub pod2html {
     }
 
     # set options for the parser
-    my $parser = Pod::Simple::XHTML::LocalPodLinks->new();
-    $parser->codes_in_verbatim(0);
-    $parser->anchor_items(1); # the old Pod::Html always did
-    $parser->backlink($self->{Backlink}); # linkify =head1 directives
-    $parser->htmldir($self->{Htmldir});
-    $parser->htmlfileurl($self->{Htmlfileurl});
-    $parser->htmlroot($self->{Htmlroot});
-    $parser->index($self->{Doindex});
-    $parser->no_errata_section(!$self->{Poderrors}); # note the inverse
-    $parser->output_string(\my $output); # written to file later
-    $parser->pages($self->{Pages});
-    $parser->quiet($self->{Quiet});
-    $parser->verbose($self->{Verbose});
+    my $parser = prepare_parser($self);
 
     # XXX: implement default title generator in pod::simple::xhtml
     # copy the way the old Pod::Html did it
@@ -359,6 +347,7 @@ sub pod2html {
     # We need to add this ourselves because we use our own header, not
     # ::XHTML's header. We need to set $parser->backlink to linkify
     # the =head1 directives
+    $parser->output_string(\my $output);
     my $bodyid = $self->{Backlink} ? ' id="_podtop_"' : '';
 
     my $csslink = '';
@@ -587,6 +576,24 @@ sub _save_page {
 
     my ($file, $dir) = fileparse($modspec, qr/\.[^.]*/); # strip .ext
     $self->{Pages}->{$modname} = $dir.$file;
+}
+
+sub prepare_parser {
+    my $self = shift;
+    my $parser = Pod::Simple::XHTML::LocalPodLinks->new();
+    $parser->codes_in_verbatim(0);
+    $parser->anchor_items(1); # the old Pod::Html always did
+    $parser->backlink($self->{Backlink}); # linkify =head1 directives
+    $parser->htmldir($self->{Htmldir});
+    $parser->htmlfileurl($self->{Htmlfileurl});
+    $parser->htmlroot($self->{Htmlroot});
+    $parser->index($self->{Doindex});
+    $parser->no_errata_section(!$self->{Poderrors}); # note the inverse
+    $parser->output_string(\my $output); # written to file later
+    $parser->pages($self->{Pages});
+    $parser->quiet($self->{Quiet});
+    $parser->verbose($self->{Verbose});
+    return $parser;
 }
 
 package Pod::Simple::XHTML::LocalPodLinks;
