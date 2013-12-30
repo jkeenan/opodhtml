@@ -221,9 +221,6 @@ This program is distributed under the Artistic License.
 
 =cut
 
-my %Pages = ();                 # associative array used to find the location
-                                #   of pages referenced by L<> links.
-
 my $self = { map { $_ => undef } qw(
     Cachedir
     Dircache
@@ -325,16 +322,16 @@ sub pod2html {
 
         print $cache join(":", @{$self->{Podpath}}) . "\n$self->{Podroot}\n";
         my $_updirs_only = ($self->{Podroot} =~ /\.\./) && !($self->{Podroot} =~ /[^\.\\\/]/);
-        foreach my $key (keys %Pages) {
+        foreach my $key (keys %{$self->{Pages}}) {
             if($_updirs_only) {
               my $_dirlevel = $self->{Podroot};
               while($_dirlevel =~ /\.\./) {
                 $_dirlevel =~ s/\.\.//;
                 # Assume $Pages{$key} has '/' separators (html dir separators).
-                $Pages{$key} =~ s/^[\w\s\-\.]+\///;
+                $self->{Pages}->{$key} =~ s/^[\w\s\-\.]+\///;
               }
             }
-            print $cache "$key $Pages{$key}\n";
+            print $cache "$key $self->{Pages}->{$key}\n";
         }
 
         close $cache or die "error closing $self->{Dircache}: $!";
@@ -351,7 +348,7 @@ sub pod2html {
     $parser->index($self->{Doindex});
     $parser->no_errata_section(!$self->{Poderrors}); # note the inverse
     $parser->output_string(\my $output); # written to file later
-    $parser->pages(\%Pages);
+    $parser->pages($self->{Pages});
     $parser->quiet($self->{Quiet});
     $parser->verbose($self->{Verbose});
 
@@ -565,7 +562,7 @@ sub load_cache {
     warn "loading directory cache\n" if $self->{Verbose};
     while (<$cachefh>) {
         /(.*?) (.*)$/;
-        $Pages{$1} = $2;
+        $self->{Pages}->{$1} = $2;
     }
 
     close($cachefh);
@@ -589,7 +586,7 @@ sub _save_page {
     $modspec = unixify($modspec);
 
     my ($file, $dir) = fileparse($modspec, qr/\.[^.]*/); # strip .ext
-    $Pages{$modname} = $dir.$file;
+    $self->{Pages}->{$modname} = $dir.$file;
 }
 
 package Pod::Simple::XHTML::LocalPodLinks;
