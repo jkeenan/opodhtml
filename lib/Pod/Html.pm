@@ -2,7 +2,7 @@ package Pod::Html;
 use strict;
 require Exporter;
 
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
+use vars qw($VERSION @ISA @EXPORT);
 $VERSION = 1.21;
 @ISA = qw(Exporter);
 @EXPORT = qw(pod2html);
@@ -16,8 +16,8 @@ use File::Spec::Unix;
 use Getopt::Long;
 use Pod::Simple::Search;
 use lib ( './lib' );
-#use Pod::Simple::XHTML::LocalPodLinks;
 use Pod::Html::Auxiliary qw(
+    parse_command_line
     usage
     html_escape
     htmlify
@@ -221,72 +221,95 @@ This program is distributed under the Artistic License.
 
 =cut
 
-my $self = { map { $_ => undef } qw(
-    Cachedir
-    Dircache
-    Htmlroot
-    Htmldir
-    Htmlfile
-    Htmlfileurl
-    Podfile
-    Podroot
-    Poderrors
-    Css
-    Recurse
-    Quiet
-    Verbose
-    Doindex
-    Backlink
-    Title
-    Header
-) };
-$self->{Curdir} = File::Spec->curdir;
-
-sub init_globals {
-    $self->{Cachedir} = ".";            # The directory to which directory caches
+sub new {
+    my $class = shift;
+    my %args = ();
+    $args{Curdir} = File::Spec->curdir;
+    $args{Cachedir} = ".";   # The directory to which directory caches
                                 #   will be written.
-
-    $self->{Dircache} = "pod2htmd.tmp";
-
-    $self->{Htmlroot} = "/";            # http-server base directory from which all
+    $args{Dircache} = "pod2htmd.tmp";
+    $args{Htmlroot} = "/";   # http-server base directory from which all
                                 #   relative paths in $podpath stem.
-    $self->{Htmldir} = "";              # The directory to which the html pages
+    $args{Htmldir} = "";     # The directory to which the html pages
                                 #   will (eventually) be written.
-    $self->{Htmlfile} = "";             # write to stdout by default
-    $self->{Htmlfileurl} = "";          # The url that other files would use to
+    $args{Htmlfile} = "";    # write to stdout by default
+    $args{Htmlfileurl} = ""; # The url that other files would use to
                                 # refer to this file.  This is only used
                                 # to make relative urls that point to
                                 # other files.
 
-    $self->{Poderrors} = 1;
-    $self->{Podfile} = "";              # read from stdin by default
-    $self->{Podpath} = [];              # list of directories containing library pods.
-    $self->{Podroot} = $self->{Curdir};         # filesystem base directory from which all
+    $args{Poderrors} = 1;
+    $args{Podfile} = "";              # read from stdin by default
+    $args{Podpath} = [];
+    $args{Podroot} = $args{Curdir};         # filesystem base directory from which all
                                 #   relative paths in $podpath stem.
-    $self->{Css} = '';                  # Cascading style sheet
-    $self->{Recurse} = 1;               # recurse on subdirectories in $podpath.
-    $self->{Quiet} = 0;                 # not quiet by default
-    $self->{Verbose} = 0;               # not verbose by default
-    $self->{Doindex} = 1;               # non-zero if we should generate an index
-    $self->{Backlink} = 0;              # no backlinks added by default
-    $self->{Header} = 0;                # produce block header/footer
-    $self->{Title} = '';                # title to give the pod(s)
-    $self->{Saved_Cache_Key} = '';
+    $args{Css} = '';                  # Cascading style sheet
+    $args{Recurse} = 1;               # recurse on subdirectories in $podpath.
+    $args{Quiet} = 0;                 # not quiet by default
+    $args{Verbose} = 0;               # not verbose by default
+    $args{Doindex} = 1;               # non-zero if we should generate an index
+    $args{Backlink} = 0;              # no backlinks added by default
+    $args{Header} = 0;                # produce block header/footer
+    $args{Title} = '';                # title to give the pod(s)
+    $args{Saved_Cache_Key} = undef;
+    return bless \%args, $class;
 }
 
-sub pod2html {
-    local(@ARGV) = @_;
-    local $_;
+sub process_options {
+    my ($self, $opts) = @_;
+    if (defined $opts) {
+        croak "process_options() needs hashref" unless ref($opts) eq 'HASH';
+    }
+    else {
+        $opts = {};
+    }
+    # Declare intermediate hash to hold cleaned-up options
+    my %h = ();
+    @{$h{Podpath}}  = split(":", $opts->{podpath}) if defined $opts->{podpath};
+    warn "--libpods is no longer supported" if defined $opts->{libpods};
 
-    init_globals();
-    parse_command_line();
+    $h{Backlink}  =         $opts->{backlink}   if defined $opts->{backlink};
+    $h{Cachedir}  = unixify($opts->{cachedir})  if defined $opts->{cachedir};
+    $h{Css}       =         $opts->{css}        if defined $opts->{css};
+    $h{Header}    =         $opts->{header}     if defined $opts->{header};
+    $h{Htmldir}   = unixify($opts->{htmldir})   if defined $opts->{htmldir};
+    $h{Htmlroot}  = unixify($opts->{htmlroot})  if defined $opts->{htmlroot};
+    $h{Doindex}   =         $opts->{index}      if defined $opts->{index};
+    $h{Podfile}   = unixify($opts->{infile})    if defined $opts->{infile};
+    $h{Htmlfile}  = unixify($opts->{outfile})   if defined $opts->{outfile};
+    $h{Poderrors} =         $opts->{poderrors}  if defined $opts->{poderrors};
+    $h{Podroot}   = unixify($opts->{podroot})   if defined $opts->{podroot};
+    $h{Quiet}     =         $opts->{quiet}      if defined $opts->{quiet};
+    $h{Recurse}   =         $opts->{recurse}    if defined $opts->{recurse};
+    $h{Title}     =         $opts->{title}      if defined $opts->{title};
+    $h{Verbose}   =         $opts->{verbose}    if defined $opts->{verbose};
+    $h{flush}     =         $opts->{flush}      if defined $opts->{flush};
 
+    while (my ($k,$v) = each %h) {
+        $self->{$k} = $v;
+    };
+    return 1;
+}
+
+sub cleanup_elements {
+    my $self = shift;
+    warn "Flushing directory caches\n"
+        if $self->{Verbose} && defined $self->{flush};
+    $self->{Dircache} = "$self->{Cachedir}/pod2htmd.tmp";
+    if (defined $self->{flush}) {
+        1 while unlink($self->{Dircache});
+    }
     # prevent '//' in urls
     $self->{Htmlroot} = "" if $self->{Htmlroot} eq "/";
     $self->{Htmldir} =~ s#/\z##;
+    # Per documentation, Htmlroot and Htmldir cannot both be set to true
+    # values.  Die if that is the case.
+    my $msg = "htmlroot and htmldir cannot both be set to true values\n";
+    $msg .= "Choose one or the other";
+    croak $msg if ($self->{Htmlroot} and $self->{Htmldir});
+
 
     if (  $self->{Htmlroot} eq ''
-       && defined( $self->{Htmldir} )
        && $self->{Htmldir} ne ''
        && substr( $self->{Htmlfile}, 0, length( $self->{Htmldir} ) ) eq $self->{Htmldir}
        ) {
@@ -294,69 +317,100 @@ sub pod2html {
         # as the location from which to calculate relative links
         # to other files. If this is '', then absolute links will
         # be used throughout.
-        #$self->{Htmlfileurl} = "$self->{Htmldir}/" . substr( $self->{Htmlfile}, length( $self->{Htmldir} ) + 1);
+        # $self->{Htmlfileurl} =
+        #   "$self->{Htmldir}/" . substr( $self->{Htmlfile}, length( $self->{Htmldir} ) + 1);
         # Is the above not just "$self->{Htmlfileurl} = $self->{Htmlfile}"?
         $self->{Htmlfileurl} = unixify($self->{Htmlfile});
-
     }
-
-    # load or generate/cache %Pages
-    unless (get_cache($self)) {
-        # generate %Pages
-        my $pwd = getcwd();
-        chdir($self->{Podroot}) ||
-            die "$0: error changing to directory $self->{Podroot}: $!\n";
-
-        # find all pod modules/pages in podpath, store in %Pages
-        # - callback used to remove Podroot and extension from each file
-        # - laborious to allow '.' in dirnames (e.g., /usr/share/perl/5.14.1)
-        Pod::Simple::Search->new->inc(0)->verbose($self->{Verbose})->laborious(1)
-            ->callback(\&_save_page)->recurse($self->{Recurse})->survey(@{$self->{Podpath}});
-
-        chdir($pwd) || die "$0: error changing to directory $pwd: $!\n";
-
-        # cache the directory list for later use
-        warn "caching directories for later use\n" if $self->{Verbose};
-        open my $cache, '>', $self->{Dircache}
-            or die "$0: error open $self->{Dircache} for writing: $!\n";
-
-        print $cache join(":", @{$self->{Podpath}}) . "\n$self->{Podroot}\n";
-        my $_updirs_only = ($self->{Podroot} =~ /\.\./) && !($self->{Podroot} =~ /[^\.\\\/]/);
-        foreach my $key (keys %{$self->{Pages}}) {
-            if($_updirs_only) {
-              my $_dirlevel = $self->{Podroot};
-              while($_dirlevel =~ /\.\./) {
-                $_dirlevel =~ s/\.\.//;
-                # Assume $Pages{$key} has '/' separators (html dir separators).
-                $self->{Pages}->{$key} =~ s/^[\w\s\-\.]+\///;
-              }
-            }
-            print $cache "$key $self->{Pages}->{$key}\n";
-        }
-
-        close $cache or die "error closing $self->{Dircache}: $!";
-    }
-
-    # set options for the parser
-    my $parser = prepare_parser($self);
 
     # XXX: implement default title generator in pod::simple::xhtml
     # copy the way the old Pod::Html did it
     $self->{Title} = html_escape($self->{Title});
+    return 1;
+}
 
+sub generate_pages_cache {
+    my $self = shift;
+    my $cache_tests = $self->get_cache();
+    return if $cache_tests;
+
+    # generate %{$self->{Pages}}
+    my $pwd = getcwd();
+    chdir($self->{Podroot}) ||
+        die "$0: error changing to directory $self->{Podroot}: $!\n";
+
+    # find all pod modules/pages in podpath, store in %{$self->{Pages}}
+    # - callback used to remove Podroot and extension from each file
+    # - laborious to allow '.' in dirnames (e.g., /usr/share/perl/5.14.1)
+    my $name2path = Pod::Simple::Search->new->inc(0)->verbose($self->{Verbose})->laborious(1)->recurse($self->{Recurse})->survey(@{$self->{Podpath}});
+    foreach my $modname (sort keys %{$name2path}) {
+        $self->_save_page($name2path->{$modname}, $modname);
+    }
+
+    chdir($pwd) || die "$0: error changing to directory $pwd: $!\n";
+
+    # cache the directory list for later use
+    if ($self->{Verbose}) {
+        warn "caching directories for later use\n";
+    }
+    open my $CACHE, '>', $self->{Dircache}
+        or die "$0: error open $self->{Dircache} for writing: $!\n";
+
+    my $cacheline = join(":", @{$self->{Podpath}}) . "\n$self->{Podroot}\n";
+    print $CACHE $cacheline;
+    my $_updirs_only = ($self->{Podroot} =~ /\.\./) && !($self->{Podroot} =~ /[^\.\\\/]/);
+    foreach my $key (keys %{$self->{Pages}}) {
+        if($_updirs_only) {
+          my $_dirlevel = $self->{Podroot};
+          while($_dirlevel =~ /\.\./) {
+            $_dirlevel =~ s/\.\.//;
+            # Assume $self->{Pages}->{$key} has '/' separators (html dir separators).
+            $self->{Pages}->{$key} =~ s/^[\w\s\-\.]+\///;
+          }
+        }
+        my $keyline = "$key $self->{Pages}->{$key}\n";
+        print $CACHE $keyline;
+    }
+
+    close $CACHE or die "error closing $self->{Dircache}: $!";
+    return 1;
+}
+
+sub prepare_parser {
+    my $self = shift;
+    my $parser = Pod::Simple::XHTML::LocalPodLinks->new();
+    $parser->codes_in_verbatim(0);
+    $parser->anchor_items(1); # the old Pod::Html always did
+    $parser->backlink($self->{Backlink}); # linkify =head1 directives
+    $parser->htmldir($self->{Htmldir});
+    $parser->htmlfileurl($self->{Htmlfileurl});
+    $parser->htmlroot($self->{Htmlroot});
+    $parser->index($self->{Doindex});
+    $parser->no_errata_section(!$self->{Poderrors}); # note the inverse
+#    $parser->output_string(\my $output); # written to file later
+    $parser->pages($self->{Pages});
+    $parser->quiet($self->{Quiet});
+    $parser->verbose($self->{Verbose});
+    return $parser;
+}
+
+sub prepare_html_components {
+    my ($self, $parser ) = @_;
+    $parser->output_string(\my $output); # written to file later
     # We need to add this ourselves because we use our own header, not
     # ::XHTML's header. We need to set $parser->backlink to linkify
     # the =head1 directives
-    $parser->output_string(\my $output);
     my $bodyid = $self->{Backlink} ? ' id="_podtop_"' : '';
 
     my $csslink = '';
-    my $tdstyle = ' style="background-color: #cccccc; color: #000"';
+    my $bodystyle = ' style="background-color: white"';
+    my $tdstyle = ' style="background-color: #cccccc"';
 
     if ($self->{Css}) {
         $csslink = qq(\n<link rel="stylesheet" href="$self->{Css}" type="text/css" />);
         $csslink =~ s,\\,/,g;
         $csslink =~ s,(/.):,$1|,;
+        $bodystyle = '';
         $tdstyle= '';
     }
 
@@ -380,7 +434,7 @@ END_OF_BLOCK
 <link rev="made" href="mailto:$Config{perladmin}" />
 </head>
 
-<body$bodyid>
+<body$bodyid$bodystyle>
 $block
 HTMLHEAD
 
@@ -390,97 +444,77 @@ $block
 
 </html>
 HTMLFOOT
-
-    my $input;
-    unless (@ARGV && $ARGV[0]) {
-        if ($self->{Podfile} and $self->{Podfile} ne '-') {
-            $input = $self->{Podfile};
-        } else {
-            $input = '-'; # XXX: make a test case for this
-        }
-    } else {
-        $self->{Podfile} = $ARGV[0];
-        $input = *ARGV;
-    }
-
-    warn "Converting input file $self->{Podfile}\n" if $self->{Verbose};
-    $parser->parse_file($input);
-
-    # Write output to file
-    write_html($self, $output);
+    return 1;
 }
 
-##############################################################################
+sub prepare_output {
+    my ($self, $parser) = @_;
+    my $input;
+#    unless (@ARGV && $ARGV[0]) {
+        if ($self->{Podfile} and $self->{Podfile} ne '-') {
+            $input = $self->{Podfile};
+        }
+#        else {
+#            $input = '-'; # XXX: make a test case for this
+#        }
+#    } else {
+#        $self->{Podfile} = $ARGV[0];
+#        $input = *ARGV;
+#    }
 
-sub parse_command_line {
-    my ($opt_backlink,$opt_cachedir,$opt_css,$opt_flush,$opt_header,
-        $opt_help,$opt_htmldir,$opt_htmlroot,$opt_index,$opt_infile,
-        $opt_outfile,$opt_poderrors,$opt_podpath,$opt_podroot,
-        $opt_quiet,$opt_recurse,$opt_title,$opt_verbose,$opt_libpods);
-
-    unshift @ARGV, split ' ', $Config{pod2html} if $Config{pod2html};
-    my $result = GetOptions(
-                       'backlink!'  => \$opt_backlink,
-                       'cachedir=s' => \$opt_cachedir,
-                       'css=s'      => \$opt_css,
-                       'flush'      => \$opt_flush,
-                       'help'       => \$opt_help,
-                       'header!'    => \$opt_header,
-                       'htmldir=s'  => \$opt_htmldir,
-                       'htmlroot=s' => \$opt_htmlroot,
-                       'index!'     => \$opt_index,
-                       'infile=s'   => \$opt_infile,
-                       'libpods=s'  => \$opt_libpods, # deprecated
-                       'outfile=s'  => \$opt_outfile,
-                       'poderrors!' => \$opt_poderrors,
-                       'podpath=s'  => \$opt_podpath,
-                       'podroot=s'  => \$opt_podroot,
-                       'quiet!'     => \$opt_quiet,
-                       'recurse!'   => \$opt_recurse,
-                       'title=s'    => \$opt_title,
-                       'verbose!'   => \$opt_verbose,
-    );
-    usage("-", "invalid parameters") if not $result;
-
-    usage("-") if defined $opt_help;    # see if the user asked for help
-    $opt_help = "";                     # just to make -w shut-up.
-
-    @{$self->{Podpath}}  = split(":", $opt_podpath) if defined $opt_podpath;
-    warn "--libpods is no longer supported" if defined $opt_libpods;
-
-    $self->{Backlink}  =          $opt_backlink   if defined $opt_backlink;
-    $self->{Cachedir}  = unixify($opt_cachedir)  if defined $opt_cachedir;
-    $self->{Css}       =          $opt_css        if defined $opt_css;
-    $self->{Header}    =          $opt_header     if defined $opt_header;
-    $self->{Htmldir}   = unixify($opt_htmldir)   if defined $opt_htmldir;
-    $self->{Htmlroot}  = unixify($opt_htmlroot)  if defined $opt_htmlroot;
-    $self->{Doindex}   =          $opt_index      if defined $opt_index;
-    $self->{Podfile}   = unixify($opt_infile)    if defined $opt_infile;
-    $self->{Htmlfile}  = unixify($opt_outfile)   if defined $opt_outfile;
-    $self->{Poderrors} =          $opt_poderrors  if defined $opt_poderrors;
-    $self->{Podroot}   = unixify($opt_podroot)   if defined $opt_podroot;
-    $self->{Quiet}     =          $opt_quiet      if defined $opt_quiet;
-    $self->{Recurse}   =          $opt_recurse    if defined $opt_recurse;
-    $self->{Title}     =          $opt_title      if defined $opt_title;
-    $self->{Verbose}   =          $opt_verbose    if defined $opt_verbose;
-
-    warn "Flushing directory caches\n"
-        if $opt_verbose && defined $opt_flush;
-    $self->{Dircache} = "$self->{Cachedir}/pod2htmd.tmp";
-    if (defined $opt_flush) {
-        1 while unlink($self->{Dircache});
+    if ($self->{Verbose}) {
+        my $subr = (caller(0))[3];
+        warn "$subr: Converting input file $self->{Podfile}\n";
     }
+    $parser->output_string(\my $output); # written to file later
+    $parser->parse_file($input);
+    return $output;
+}
+
+sub write_html {
+    my ($self, $output) = @_;
+    my $FHOUT;
+    if($self->{Htmlfile} and $self->{Htmlfile} ne '-') {
+        open $FHOUT, ">", $self->{Htmlfile}
+            or die "$0: cannot open $self->{Htmlfile} file for output: $!\n";
+        binmode $FHOUT, ":utf8";
+        print $FHOUT $output;
+        close $FHOUT or die "Failed to close $self->{Htmlfile}: $!";
+        chmod 0644, $self->{Htmlfile};
+    }
+    else {
+        open $FHOUT, ">-";
+        binmode $FHOUT, ":utf8";
+        print $FHOUT $output;
+        close $FHOUT or die "Failed to close handle to STDOUT: $!";
+    }
+    return 1;
+}
+
+sub pod2html {
+    my $options = parse_command_line();
+
+    my $p2h = Pod::Html->new();
+    $p2h->process_options( $options );
+    $p2h->cleanup_elements();
+    $p2h->generate_pages_cache();
+
+    my $parser = $p2h->prepare_parser();
+    $p2h->prepare_html_components($parser);
+    my $output = $p2h->prepare_output($parser);
+    my $rv = $p2h->write_html($output);
+    $rv ? exit(0) : exit(1);
 }
 
 sub get_cache {
     my $self = shift;
-    my @cache_key_args = @_;
+#    my @cache_key_args = @_;
 
     # A first-level cache:
     # Don't bother reading the cache files if they still apply
     # and haven't changed since we last read them.
 
-    my $this_cache_key = cache_key($self);
+    my $this_cache_key = $self->cache_key();
     return 1 if $self->{Saved_Cache_Key}
         and $this_cache_key eq $self->{Saved_Cache_Key};
     $self->{Saved_Cache_Key} = $this_cache_key;
@@ -490,7 +524,7 @@ sub get_cache {
     my $tests = 0;
     if (-f $self->{Dircache}) {
         warn "scanning for directory cache\n" if $self->{Verbose};
-        $tests = load_cache($self);
+        $tests = $self->load_cache();
     }
 
     return $tests;
@@ -517,33 +551,33 @@ sub load_cache {
     local $_;
 
     warn "scanning for directory cache\n" if $self->{Verbose};
-    open(my $cachefh, '<', $self->{Dircache}) ||
+    open(my $CACHEFH, '<', $self->{Dircache}) ||
         die "$0: error opening $self->{Dircache} for reading: $!\n";
     $/ = "\n";
 
     # is it the same podpath?
-    $_ = <$cachefh>;
+    $_ = <$CACHEFH>;
     chomp($_);
     $tests++ if (join(":", @{$self->{Podpath}}) eq $_);
 
     # is it the same podroot?
-    $_ = <$cachefh>;
+    $_ = <$CACHEFH>;
     chomp($_);
     $tests++ if ($self->{Podroot} eq $_);
 
     # load the cache if its good
     if ($tests != 2) {
-        close($cachefh);
+        close($CACHEFH);
         return 0;
     }
 
     warn "loading directory cache\n" if $self->{Verbose};
-    while (<$cachefh>) {
+    while (<$CACHEFH>) {
         /(.*?) (.*)$/;
         $self->{Pages}->{$1} = $2;
     }
 
-    close($cachefh);
+    close($CACHEFH);
     return 1;
 }
 
@@ -552,7 +586,7 @@ sub load_cache {
 # store POD files in %Pages
 #
 sub _save_page {
-    my ($modspec, $modname) = @_;
+    my ($self, $modspec, $modname) = @_;
 
     # Remove Podroot from path
     $modspec = $self->{Podroot} eq File::Spec->curdir
@@ -565,43 +599,6 @@ sub _save_page {
 
     my ($file, $dir) = fileparse($modspec, qr/\.[^.]*/); # strip .ext
     $self->{Pages}->{$modname} = $dir.$file;
-}
-
-sub prepare_parser {
-    my $self = shift;
-    my $parser = Pod::Simple::XHTML::LocalPodLinks->new();
-    $parser->codes_in_verbatim(0);
-    $parser->anchor_items(1); # the old Pod::Html always did
-    $parser->backlink($self->{Backlink}); # linkify =head1 directives
-    $parser->htmldir($self->{Htmldir});
-    $parser->htmlfileurl($self->{Htmlfileurl});
-    $parser->htmlroot($self->{Htmlroot});
-    $parser->index($self->{Doindex});
-    $parser->no_errata_section(!$self->{Poderrors}); # note the inverse
-    $parser->output_string(\my $output); # written to file later
-    $parser->pages($self->{Pages});
-    $parser->quiet($self->{Quiet});
-    $parser->verbose($self->{Verbose});
-    return $parser;
-}
-
-sub write_html {
-    my ($self, $output) = @_;
-    my $fhout;
-    if($self->{Htmlfile} and $self->{Htmlfile} ne '-') {
-        open $fhout, ">", $self->{Htmlfile}
-            or die "$0: cannot open $self->{Htmlfile} file for output: $!\n";
-        binmode $fhout, ":utf8";
-        print $fhout $output;
-        close $fhout or die "Failed to close $self->{Htmlfile}: $!";
-        chmod 0644, $self->{Htmlfile};
-    } else {
-        open $fhout, ">-";
-        binmode $fhout, ":utf8";
-        print $fhout $output;
-        close $fhout or die "Failed to close $self->{Htmlfile}: $!";
-    }
-    return 1;
 }
 
 package Pod::Simple::XHTML::LocalPodLinks;

@@ -6,6 +6,7 @@ use vars qw($VERSION @ISA @EXPORT_OK);
 #$VERSION = 1.16;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(
+    parse_command_line
     usage
     html_escape
     htmlify
@@ -13,46 +14,45 @@ use vars qw($VERSION @ISA @EXPORT_OK);
     unixify
     relativize_url
 );
-#    parse_command_line
 
-#use Config;
+use Config;
 use File::Spec;
 use File::Spec::Unix;
-#use Getopt::Long;
-#use locale; # make \w work right in non-ASCII lands
+use Getopt::Long;
+use locale; # make \w work right in non-ASCII lands
 
-#sub parse_command_line {
-#    my %opts = ();
-#
-#    unshift @ARGV, split ' ', $Config{pod2html} if $Config{pod2html};
-#    my $result = GetOptions(\%opts,
-#        'backlink!',
-#        'cachedir=s',
-#        'css=s',
-#        'flush',
-#        'help',
-#        'header!',
-#        'htmldir=s',
-#        'htmlroot=s',
-#        'index!',
-#        'infile=s',
-#        'libpods=s', # deprecated
-#        'outfile=s',
-#        'poderrors!',
-#        'podpath=s',
-#        'podroot=s',
-#        'quiet!',
-#        'recurse!',
-#        'title=s',
-#        'verbose!',
-#    );
-#    usage("-", "invalid parameters") if not $result;
-#
-#    usage("-") if defined $opts{help};    # see if the user asked for help
-#    $opts{help} = ''; # just to make -w shut-up.
-#    return \%opts;
-#}
 
+sub parse_command_line {
+    my %opts = ();
+
+    unshift @ARGV, split ' ', $Config{pod2html} if $Config{pod2html};
+    my $result = GetOptions(\%opts,
+        'backlink!',
+        'cachedir=s',
+        'css=s',
+        'flush',
+        'help',
+        'header!',
+        'htmldir=s',
+        'htmlroot=s',
+        'index!',
+        'infile=s',
+        'libpods=s', # deprecated
+        'outfile=s',
+        'poderrors!',
+        'podpath=s',
+        'podroot=s',
+        'quiet!',
+        'recurse!',
+        'title=s',
+        'verbose!',
+    );
+    usage("-", "invalid parameters") if not $result;
+
+    usage("-") if defined $opts{help};    # see if the user asked for help
+    $opts{help} = ''; # just to make -w shut-up.
+    return \%opts;
+}
 
 sub usage {
     my $podfile = shift;
@@ -94,35 +94,6 @@ END_OF_USAGE
 
 }
 
-## relativize_url - convert an absolute URL to one relative to a base URL.
-## Assumes both end in a filename.
-##
-#sub relativize_url {
-#    my ($dest, $source) = @_;
-#
-#    # Remove each file from its path
-#    my ($dest_volume, $dest_directory, $dest_file) =
-#        File::Spec::Unix->splitpath( $dest );
-#    $dest = File::Spec::Unix->catpath( $dest_volume, $dest_directory, '' );
-#
-#    my ($source_volume, $source_directory, $source_file) =
-#        File::Spec::Unix->splitpath( $source );
-#    $source = File::Spec::Unix->catpath( $source_volume, $source_directory, '' );
-#
-#    my $rel_path = '';
-#    if ($dest ne '') {
-#       $rel_path = File::Spec::Unix->abs2rel( $dest, $source );
-#    }
-#
-#    if ($rel_path ne '' && substr( $rel_path, -1 ) ne '/') {
-#        $rel_path .= "/$dest_file";
-#    } else {
-#        $rel_path .= "$dest_file";
-#    }
-#
-#    return $rel_path;
-#}
-##
 
 #
 # html_escape: make text safe for HTML
