@@ -407,18 +407,7 @@ HTMLFOOT
     $parser->parse_file($input);
 
     # Write output to file
-    $self->{Htmlfile} = "-" unless $self->{Htmlfile}; # stdout
-    my $fhout;
-    if($self->{Htmlfile} and $self->{Htmlfile} ne '-') {
-        open $fhout, ">", $self->{Htmlfile}
-            or die "$0: cannot open $self->{Htmlfile} file for output: $!\n";
-    } else {
-        open $fhout, ">-";
-    }
-    binmode $fhout, ":utf8";
-    print $fhout $output;
-    close $fhout or die "Failed to close $self->{Htmlfile}: $!";
-    chmod 0644, $self->{Htmlfile} unless $self->{Htmlfile} eq '-';
+    write_html($self, $output);
 }
 
 ##############################################################################
@@ -594,6 +583,25 @@ sub prepare_parser {
     $parser->quiet($self->{Quiet});
     $parser->verbose($self->{Verbose});
     return $parser;
+}
+
+sub write_html {
+    my ($self, $output) = @_;
+    my $fhout;
+    if($self->{Htmlfile} and $self->{Htmlfile} ne '-') {
+        open $fhout, ">", $self->{Htmlfile}
+            or die "$0: cannot open $self->{Htmlfile} file for output: $!\n";
+        binmode $fhout, ":utf8";
+        print $fhout $output;
+        close $fhout or die "Failed to close $self->{Htmlfile}: $!";
+        chmod 0644, $self->{Htmlfile};
+    } else {
+        open $fhout, ">-";
+        binmode $fhout, ":utf8";
+        print $fhout $output;
+        close $fhout or die "Failed to close $self->{Htmlfile}: $!";
+    }
+    return 1;
 }
 
 package Pod::Simple::XHTML::LocalPodLinks;
