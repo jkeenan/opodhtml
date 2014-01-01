@@ -403,14 +403,12 @@ sub prepare_html_components {
     my $bodyid = $self->{Backlink} ? ' id="_podtop_"' : '';
 
     my $csslink = '';
-    my $bodystyle = ' style="background-color: white"';
     my $tdstyle = ' style="background-color: #cccccc"';
 
     if ($self->{Css}) {
         $csslink = qq(\n<link rel="stylesheet" href="$self->{Css}" type="text/css" />);
         $csslink =~ s,\\,/,g;
         $csslink =~ s,(/.):,$1|,;
-        $bodystyle = '';
         $tdstyle= '';
     }
 
@@ -434,7 +432,7 @@ END_OF_BLOCK
 <link rev="made" href="mailto:$Config{perladmin}" />
 </head>
 
-<body$bodyid$bodystyle>
+<body$bodyid>
 $block
 HTMLHEAD
 
