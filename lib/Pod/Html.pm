@@ -403,7 +403,7 @@ sub prepare_html_components {
     my $bodyid = $self->{Backlink} ? ' id="_podtop_"' : '';
 
     my $csslink = '';
-    my $tdstyle = ' style="background-color: #cccccc"';
+    my $tdstyle = ' style="background-color: #cccccc; color: #000"';
 
     if ($self->{Css}) {
         $csslink = qq(\n<link rel="stylesheet" href="$self->{Css}" type="text/css" />);
@@ -460,10 +460,7 @@ sub prepare_output {
 #        $input = *ARGV;
 #    }
 
-    if ($self->{Verbose}) {
-        my $subr = (caller(0))[3];
-        warn "$subr: Converting input file $self->{Podfile}\n";
-    }
+    warn "Converting input file $self->{Podfile}\n" if $self->{Verbose};
     $parser->output_string(\my $output); # written to file later
     $parser->parse_file($input);
     return $output;
