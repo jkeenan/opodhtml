@@ -633,6 +633,7 @@ sub resolve_pod_page_link {
 
     my $path; # path to $to according to %Pages
     unless (exists $self->pages->{$to}) {
+print STDERR "AAA: In the unless block\n";
         # Try to find a POD that ends with $to and use that.
         # e.g., given L<XHTML>, if there is no $Podpath/XHTML in %Pages,
         # look for $Podpath/*/XHTML in %Pages, with * being any path,
@@ -641,6 +642,7 @@ sub resolve_pod_page_link {
         foreach my $modname (keys %{$self->pages}) {
             push @matches, $modname if $modname =~ /::\Q$to\E\z/;
         }
+print STDERR "BBB: matches: <@matches>\n";
 
         if ($#matches == -1) {
             warn "Cannot find \"$to\" in podpath: " .
@@ -660,6 +662,7 @@ sub resolve_pod_page_link {
             $path = $self->pages->{$matches[-1]};
         }
     } else {
+print STDERR "CCC: In the else block\n";
         $path = $self->pages->{$to};
     }
 
@@ -667,6 +670,7 @@ sub resolve_pod_page_link {
                                         $path);
 
     if ($self->htmlfileurl ne '') {
+print STDERR "DDD: In the ne block\n";
         # then $self->htmlroot eq '' (by definition of htmlfileurl) so
         # $self->htmldir needs to be prepended to link to get the absolute path
         # that will be relativized
@@ -676,6 +680,7 @@ sub resolve_pod_page_link {
         );
     }
 
+print STDERR "EEE: Returning: ", $url . ".html$section", "\n";
     return $url . ".html$section";
 }
 
