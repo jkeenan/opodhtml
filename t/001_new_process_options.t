@@ -44,7 +44,8 @@ my ($p2h, $rv);
     my $infile = 't/cache.t';
     $rv = $p2h->process_options( {
         backlink => 1,
-        # css => 'path/to/stylesheet.css',
+        cachedir => 'cache',
+        css => 'path/to/stylesheet.css',
         header => 1,
         'index' => 0,
         infile => $infile,
