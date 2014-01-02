@@ -597,6 +597,42 @@ sub _save_page {
     $self->{Pages}->{$modname} = $dir.$file;
 }
 
+=head2 C<get()>
+
+=over 4
+
+=item * Purpose
+
+Access current value of an element in the Pod::Html object.
+
+=item * Arguments
+
+    my $ucachefile = $p2h->get('Dircache');
+
+String holding name of element in object.
+
+=item * Return Value
+
+String holding value of element in object if a value is provided and if that
+value is defined.  Otherwise, return value is undefined.
+
+=item * Comment
+
+Useful in testing of Pod::Html, but not needed in production programs.
+
+=back
+
+=cut
+
+sub get {
+    my ($self, $element) = @_;
+    return unless defined $element;
+    return unless (exists $self->{$element} and defined $self->{$element});
+    return $self->{$element};
+}
+
+1;
+
 package Pod::Simple::XHTML::LocalPodLinks;
 use strict;
 use warnings;
