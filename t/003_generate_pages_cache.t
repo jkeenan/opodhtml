@@ -14,9 +14,7 @@ use Pod::Html::Auxiliary qw(
     parse_command_line
     unixify
 );
-use Data::Dumper;
-use Test::More qw(no_plan); # tests => 10;
-use IO::CaptureOutput qw( capture );
+use Test::More tests => 37;
 
 my ($options, $p2h, $rv);
 my $cwd = Pod::Html::unixify(Cwd::cwd());
@@ -45,7 +43,7 @@ is(-f $tcachefile, undef, "No cache file to start");
     $rv = $p2h->generate_pages_cache();
     ok(defined($rv),
         "generate_pages_cache() returned defined value, indicating full run");
-    
+
     is(-f $cachefile, 1, "Cache created");
     open my $CACHE, '<', $cachefile or die "Cannot open cache file: $!";
     chomp($podpath = <$CACHE>);
@@ -86,7 +84,7 @@ is(-f $tcachefile, undef, "No cache file to start");
         $pages{$1} = $2;
     }
     chdir("t");
-    %expected_pages = 
+    %expected_pages =
         # chop off the .pod and set the path
         map { my $f = substr($_, 0, -4); $f => "t/$f" }
         <*.pod>;
@@ -128,17 +126,20 @@ is(-f $tcachefile, undef, "No cache file to start");
     $p2h->process_options( $options );
     $p2h->cleanup_elements();
     {
-#        my ($stdout, $stderr);
-#        capture(
-#            sub { $rv = $p2h->generate_pages_cache(); },
-#            \$stdout,
-#            \$stderr,
-#        );
-        select((select(STDOUT); $rv = $p2h->generate_pages_cache();)[0]);
+        my $stdout;
+        open my $FH, '>', \$stdout
+            or die "Unable to open for writing to scalar: $!";
+        my $oldFH = select $FH;
+        my $warning = '';
+        local $SIG{__WARN__} = sub { $warning = $_[0]; };
+        $rv = $p2h->generate_pages_cache();
+        select $oldFH;
+        close $FH;
+
         ok(defined($rv),
             "generate_pages_cache() returned defined value, indicating full run");
-#        like($stderr, qr/caching directories for later use/s,
-#            "generate_pages_cache(): verbose: caching directories");
+        like($warning, qr/caching directories for later use/s,
+            "generate_pages_cache(): verbose: caching directories");
     }
     is(-f $cachefile, 1, "Cache created");
     open my $CACHE, '<', $cachefile or die "Cannot open cache file: $!";
@@ -167,15 +168,19 @@ is(-f $tcachefile, undef, "No cache file to start");
     $p2h->process_options( $options );
     $p2h->cleanup_elements();
     {
-        my ($stdout, $stderr);
-        capture(
-            sub { $rv = $p2h->generate_pages_cache(); },
-            \$stdout,
-            \$stderr,
-        );
+        my $stdout;
+        open my $FH, '>', \$stdout
+            or die "Unable to open for writing to scalar: $!";
+        my $oldFH = select $FH;
+        my $warning = '';
+        local $SIG{__WARN__} = sub { $warning = $_[0]; };
+        $rv = $p2h->generate_pages_cache();
+        select $oldFH;
+        close $FH;
+
         ok(defined($rv),
             "generate_pages_cache() returned defined value, indicating full run");
-        like($stderr, qr/caching directories for later use/s,
+        like($warning, qr/caching directories for later use/s,
             "generate_pages_cache(): verbose: caching directories");
     }
     is(-f $tcachefile, 1, "Cache created");
@@ -189,7 +194,7 @@ is(-f $tcachefile, undef, "No cache file to start");
         $pages{$1} = $2;
     }
     chdir("t");
-    %expected_pages = 
+    %expected_pages =
         # chop off the .pod and set the path
         map { my $f = substr($_, 0, -4); $f => "t/$f" }
         <*.pod>;
@@ -201,21 +206,25 @@ is(-f $tcachefile, undef, "No cache file to start");
     # Now that the cachefile exists, we'll conduct another run to exercise
     # other parts of the code.
     {
-        my ($stdout, $stderr);
-        capture(
-            sub { $rv = $p2h->generate_pages_cache(); },
-            \$stdout,
-            \$stderr,
-        );
+        my $stdout;
+        open my $FH, '>', \$stdout
+            or die "Unable to open for writing to scalar: $!";
+        my $oldFH = select $FH;
+        my $warning = '';
+        local $SIG{__WARN__} = sub { $warning = $_[0]; };
+        $rv = $p2h->generate_pages_cache();
+        select $oldFH;
+        close $FH;
+
         ok(! defined($rv),
             "generate_pages_cache() returned undefined value, indicating no need for full run");
+#        like(
+#            $warning,
+#            qr/scanning for directory cache/s,
+#            "got verbose output: scanning",
+#        );
         like(
-            $stderr,
-            qr/scanning for directory cache/s,
-            "got verbose output: scanning",
-        );
-        like(
-            $stderr,
+            $warning,
             qr/loading directory cache/s,
             "got verbose output: loading",
         );
