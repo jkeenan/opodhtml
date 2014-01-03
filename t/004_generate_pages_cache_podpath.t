@@ -17,7 +17,7 @@ use Pod::Html ();
 use Pod::Html::Auxiliary qw(
     unixify
 );
-use Test::More tests =>  6;
+use Test::More tests =>  5;
 
 my ($options, $p2h, $rv);
 my $cwd = Pod::Html::unixify(Cwd::cwd());
@@ -64,10 +64,7 @@ my $source_infile = "t/cache.pod";
     close $CACHE;
     is($podpath, $podpath_set, "podpath is $podpath_set");
     is($podroot, $podroot_set, "podroot is $podroot_set");
-    chdir $cwd or croak "Unable to change back to $cwd";
 
-    1 while unlink $outfile;
-    1 while unlink $cachefile;
-    is(-f $cachefile, undef, "No cache file to end");
+    chdir $cwd or croak "Unable to change back to $cwd";
 }
 

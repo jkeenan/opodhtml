@@ -8,31 +8,46 @@ BEGIN {
 # XXX test --flush and %Pages being loaded/used for cross references
 
 use strict;
+use Carp;
 use Cwd;
+use File::Copy;
+use File::Path qw( make_path );
+use File::Temp qw( tempdir );
 use Pod::Html ();
 use Pod::Html::Auxiliary qw(
     unixify
 );
-use Test::More tests => 10;
+use Test::More tests =>  7;
 
 my ($options, $p2h, $rv);
 my $cwd = Pod::Html::unixify(Cwd::cwd());
-my $infile = "t/cache.pod";
-my $outfile = "cacheout.html";
-my $cachefile = "pod2htmd.tmp";
-my $tcachefile = "t/pod2htmd.tmp";
-my ($podpath, $podroot);
-
-unlink $cachefile, $tcachefile;
-is(-f $cachefile, undef, "No cache file to start");
-is(-f $tcachefile, undef, "No cache file to start");
+my $source_infile = "t/cache.pod";
 
 {
+    my $tdir = tempdir( CLEANUP => 1 );
+    make_path("$tdir/alpha", "$tdir/beta", "$tdir/gamma", "$tdir/t", {
+        verbose => 0,
+        mode => 0755,
+    });
+    my $infile = "$tdir/alpha/cache.pod";
+    my $outfile ="cacheout.html",
+    copy $source_infile => $infile
+        or croak "Unable to copy $infile";
+    chdir $tdir or croak "Unable to change to $tdir";
+    my $podroot_set = "..";
+    my $podpath_set = join(':' => qw( alpha beta gamma ));
+
+    my $cachefile = "pod2htmd.tmp";
+    unlink $cachefile;
+    is(-f $cachefile, undef, "No cache file to start");
+    my %pages = ();
+    my %expected_pages = ();
+
     $options = {
         infile => $infile,
         outfile  => $outfile,
         podpath => "scooby:shaggy:fred:velma:daphne",
-        podroot => $cwd,
+        podroot => $tdir,
     };
     $p2h = Pod::Html->new();
     $p2h->process_options( $options );
@@ -52,13 +67,7 @@ is(-f $tcachefile, undef, "No cache file to start");
 
     my $rv = $p2h->write_html($output);
     ok($rv, "write_html() returned true value");
-}
 
-# Cleanup
-1 while unlink $outfile;
-1 while unlink $cachefile;
-1 while unlink $tcachefile;
-is(-f $cachefile, undef, "No cache file to end");
-is(-f $tcachefile, undef, "No cache file to end");
-__END__
+    chdir($cwd) or croak "Cannot change back to starting point";
+} # end of $tdir
 
