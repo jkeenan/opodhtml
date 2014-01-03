@@ -4,14 +4,10 @@ BEGIN {
     die "Run me from outside the t/ directory, please" unless -d 't';
 }
 
-# test the directory cache
-# XXX test --flush and %Pages being loaded/used for cross references
-
 use strict;
 use Cwd;
-use Pod::Html;
+use Pod::Html ();
 use Pod::Html::Auxiliary qw(
-    parse_command_line
     unixify
 );
 use Test::More tests =>  8;

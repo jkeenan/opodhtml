@@ -1,7 +1,7 @@
 # -*- perl -*-
 use strict;
 use warnings;
-use Pod::Html;
+use Pod::Html ();
 use Pod::Html::Auxiliary qw( unixify );
 use Test::More tests => 26;
 

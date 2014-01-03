@@ -9,9 +9,8 @@ BEGIN {
 
 use strict;
 use Cwd;
-use Pod::Html;
+use Pod::Html ();
 use Pod::Html::Auxiliary qw(
-    parse_command_line
     unixify
 );
 use Test::More tests => 10;

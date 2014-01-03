@@ -13,9 +13,8 @@ use Cwd;
 use File::Copy;
 use File::Path qw( make_path );
 use File::Temp qw( tempdir );
-use Pod::Html;
+use Pod::Html ();
 use Pod::Html::Auxiliary qw(
-    parse_command_line
     unixify
 );
 use Test::More tests =>  6;

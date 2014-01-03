@@ -1,7 +1,7 @@
 # -*- perl -*-
 use strict;
 use warnings;
-use Pod::Html;
+use Pod::Html ();
 use Test::More tests => 18;
 
 my ($p2h, $rv);
