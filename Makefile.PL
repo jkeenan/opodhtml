@@ -8,8 +8,9 @@ WriteMakefile(
                      'Test::Simple' => 0.44,
                      'Carp' => 0,
                      'Cwd' => 0,
-                     'IO::File' => 0,
-                     'Scalar::Util' => 0, # verify
+                     'File::Copy' => 0,
+                     'File::Path' => 2.08,
+                     'File::Temp' => 0.14,
 #                     'IO::CaptureOutput' => 0, # for testing only
                     },
     LICENSE     => 'perl',

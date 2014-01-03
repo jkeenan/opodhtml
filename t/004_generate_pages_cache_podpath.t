@@ -34,7 +34,7 @@ my $source_infile = "t/cache.pod";
     my $outfile ="cacheout.html",
     copy $source_infile => $infile
         or croak "Unable to copy $infile";
-    chdir "$tdir/alpha" or croak "Unable to change to $tdir/alpha";
+    chdir $tdir or croak "Unable to change to $tdir";
     my $podroot_set = "..";
     my $podpath_set = join(':' => qw( alpha beta gamma ));
 

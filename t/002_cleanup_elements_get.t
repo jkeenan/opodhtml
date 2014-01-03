@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Pod::Html;
 use Pod::Html::Auxiliary qw( unixify );
-use Test::More qw(no_plan); # tests => 2;
+use Test::More tests => 26;
 
 my ($p2h, $rv);
 $p2h = Pod::Html->new();
