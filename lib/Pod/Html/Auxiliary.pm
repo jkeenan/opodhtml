@@ -198,7 +198,8 @@ sub relativize_url {
 
     if ($rel_path ne '' && substr( $rel_path, -1 ) ne '/') {
         $rel_path .= "/$dest_file";
-    } else {
+    }
+    else {
         $rel_path .= "$dest_file";
     }
 
