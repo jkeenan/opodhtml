@@ -13,6 +13,7 @@ t/005_prepare_parser_html_components.t
 t/006_prepare_output_write_html.t
 t/007_pod2html.t
 t/601_anchorify.t
+t/602_eol.t
 t/603_relativize_url.t
 t/604_unixify.t
 t/605_usage.t
@@ -37,7 +38,6 @@ tmp/cache.t
 tmp/crossref.t
 tmp/crossref2.t
 tmp/crossref3.t
-tmp/eol.t
 tmp/feature.t
 tmp/feature2.t
 tmp/htmldir1.t
