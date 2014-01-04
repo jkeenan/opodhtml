@@ -17,6 +17,10 @@ use Pod::Html ();
 use Pod::Html::Auxiliary qw(
     unixify
 );
+use lib qw( t/lib );
+use Testing qw(
+    read_cachefile
+);
 use Test::More tests =>  5;
 
 my ($options, $p2h, $rv);
@@ -57,11 +61,7 @@ my $source_infile = "t/cache.pod";
         "generate_pages_cache() returned defined value, indicating full run");
     
     is(-f $cachefile, 1, "Cache created");
-    my ($podpath, $podroot);
-    open my $CACHE, '<', $cachefile or croak "Cannot open cache file: $!";
-    chomp($podpath = <$CACHE>);
-    chomp($podroot = <$CACHE>);
-    close $CACHE;
+    my ($podpath, $podroot) = read_cachefile($cachefile);
     is($podpath, $podpath_set, "podpath is $podpath_set");
     is($podroot, $podroot_set, "podroot is $podroot_set");
 

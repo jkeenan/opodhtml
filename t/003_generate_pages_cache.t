@@ -17,6 +17,12 @@ use Pod::Html ();
 use Pod::Html::Auxiliary qw(
     unixify
 );
+use lib qw( t/lib );
+use Testing qw(
+    read_cachefile
+    read_cachefile_with_pages
+    get_expected_pages
+);
 use Test::More tests => 31;
 
 my ($options, $p2h, $rv);
@@ -59,11 +65,7 @@ my $source_infile = "t/cache.pod";
         ok(defined($rv),
             "generate_pages_cache() returned defined value, indicating full run");
         is(-f $cachefile, 1, "Cache $cachefile created");
-        my ($podpath, $podroot);
-        open my $CACHE, '<', $cachefile or die "Cannot open cache file: $!";
-        chomp($podpath = <$CACHE>);
-        chomp($podroot = <$CACHE>);
-        close $CACHE;
+        my ($podpath, $podroot) = read_cachefile($cachefile);
         is($podpath, "scooby:shaggy:fred:velma:daphne", "podpath");
         is($podroot, $tdir, "podroot");
     }
@@ -71,8 +73,6 @@ my $source_infile = "t/cache.pod";
     # II.
     # test cache contents
     {
-        my %pages = ();
-        my %expected_pages = ();
         $options = {
             infile => $infile,
             outfile  => $outfile,
@@ -89,24 +89,11 @@ my $source_infile = "t/cache.pod";
         ok(defined($rv),
             "generate_pages_cache() returned defined value, indicating full run");
         is(-f $tcachefile, 1, "Cache $tcachefile created");
-        my ($podpath, $podroot);
-        open my $CACHE, '<', $tcachefile or die "Cannot open cache file: $!";
-        chomp($podpath = <$CACHE>);
-        chomp($podroot = <$CACHE>);
+        my ($podpath, $podroot, $pages) =
+            read_cachefile_with_pages($tcachefile);
         is($podpath, "t", "podpath");
-        %pages = ();
-        while (<$CACHE>) {
-            /(.*?) (.*)$/;
-            $pages{$1} = $2;
-        }
-        chdir("t");
-        %expected_pages =
-            # chop off the .pod and set the path
-            map { my $f = substr($_, 0, -4); $f => "t/$f" }
-            <*.pod>;
-        chdir($tdir);
-        is_deeply(\%pages, \%expected_pages, "cache contents");
-        close $CACHE;
+        my $expected_pages = get_expected_pages($podpath, $tdir);
+        is_deeply($pages, $expected_pages, "cache contents");
         ok( (-f $ucachefile), "'Dircache' now set and file $ucachefile exists");
 
         # IIa.
@@ -172,11 +159,7 @@ my $source_infile = "t/cache.pod";
                 "generate_pages_cache(): verbose: caching directories");
         }
         is(-f $cachefile, 1, "Cache created");
-        my ($podpath, $podroot);
-        open my $CACHE, '<', $cachefile or die "Cannot open cache file: $!";
-        chomp($podpath = <$CACHE>);
-        chomp($podroot = <$CACHE>);
-        close $CACHE;
+        my ($podpath, $podroot) = read_cachefile($cachefile);
         is($podpath, "scooby:shaggy:fred:velma:daphne", "podpath");
         is($podroot, $tdir, "podroot");
     }
@@ -184,9 +167,6 @@ my $source_infile = "t/cache.pod";
     # IV.
     # test cache contents
     {
-        my %pages = ();
-        my %expected_pages = ();
-
         $options = {
             infile => $infile,
             outfile  => $outfile,
@@ -215,24 +195,11 @@ my $source_infile = "t/cache.pod";
                 "generate_pages_cache(): verbose: caching directories");
         }
         is(-f $tcachefile, 1, "Cache created");
-        my ($podpath, $podroot);
-        open my $CACHE, '<', $tcachefile or die "Cannot open cache file: $!";
-        chomp($podpath = <$CACHE>);
-        chomp($podroot = <$CACHE>);
+        my ($podpath, $podroot, $pages) =
+            read_cachefile_with_pages($tcachefile);
         is($podpath, "t", "podpath");
-        %pages = ();
-        while (<$CACHE>) {
-            /(.*?) (.*)$/;
-            $pages{$1} = $2;
-        }
-        chdir("t");
-        %expected_pages =
-            # chop off the .pod and set the path
-            map { my $f = substr($_, 0, -4); $f => "t/$f" }
-            <*.pod>;
-        chdir($tdir);
-        is_deeply(\%pages, \%expected_pages, "cache contents");
-        close $CACHE;
+        my $expected_pages = get_expected_pages($podpath, $tdir);
+        is_deeply($pages, $expected_pages, "cache contents");
 
         # IVa.
         # Now that the cachefile exists, we'll conduct another run to exercise
@@ -272,11 +239,7 @@ my $source_infile = "t/cache.pod";
         ok(defined($rv),
             "generate_pages_cache() returned defined value, indicating full run");
         is(-f $cachefile, 1, "Cache created");
-        my ($podpath, $podroot);
-        open my $CACHE, '<', $cachefile or die "Cannot open cache file: $!";
-        chomp($podpath = <$CACHE>);
-        chomp($podroot = <$CACHE>);
-        close $CACHE;
+        my ($podpath, $podroot) = read_cachefile($cachefile);
         is($podpath, "scooby:shaggy:fred:velma:daphne", "podpath");
         is($podroot, "..", "podroot");
     }
