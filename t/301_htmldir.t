@@ -22,8 +22,8 @@ use Testing qw(
 use Test::More qw(no_plan); # tests =>  1;
 
 my $start_dir = Pod::Html::unixify(Cwd::cwd());
-my $podfile = 'crossref';
-my $testname = 'cross references';
+my $podfile = 'htmldir1';
+my $testname = 'test --htmldir and --htmlroot 1a';
 my $templated_expected; { local $/; $templated_expected = <DATA>; }
 
 {
@@ -38,6 +38,43 @@ Data::Dump::pp($f);
             File::Spec::Unix->catdir($f->{relcwd}, 'testdir/test.lib'),
         ) ),
         podroot   => File::Spec::Unix->catpath($f->{volume}, '/', ''),
+    };
+    map { $constructor_args->{$_} = $extra_args->{$_} } keys %{$extra_args};
+Data::Dump::pp($constructor_args);
+
+    ok(Pod::Html::run($constructor_args), "Pod::Html methods completed");
+
+    my ($expect, $result) = get_expect_and_result($f, $templated_expected);
+    my ($diff, $diffopt) = identify_diff();
+    if ($diff) {
+        ok($expect eq $result, $testname)
+            or print_differences(
+                $podfile, $expect, $diff, $diffopt, $f->{outfile});
+    }
+    else {
+        # This is fairly evil, but lets us get detailed failure modes
+        # anywhere that we've failed to identify a diff program.
+        is($expect, $result, $testname);
+    }
+
+    pass($0);
+
+    chdir $start_dir or croak "Unable to change back to starting place";
+}
+
+$podfile = 'htmldir1';
+$testname = 'test --htmldir and --htmlroot 1b';
+{
+    my $tdir = initialize_testing_directory($start_dir, $podfile);
+    my $f = get_files_and_dirs($podfile);
+Data::Dump::pp($f);
+
+    my $constructor_args = get_basic_args($tdir, $f);
+    my $extra_args = {
+        podpath     => $f->{relcwd},
+        podroot     => File::Spec::Unix->catpath($f->{volume}, '/', ''),
+        htmldir     => File::Spec::Unix->catdir($f->{relcwd}, 't'),
+        htmlroot    => '/',
     };
     map { $constructor_args->{$_} = $extra_args->{$_} } keys %{$extra_args};
 Data::Dump::pp($constructor_args);
@@ -79,56 +116,25 @@ __DATA__
 <ul id="index">
   <li><a href="#NAME">NAME</a></li>
   <li><a href="#LINKS">LINKS</a></li>
-  <li><a href="#TARGETS">TARGETS</a>
-    <ul>
-      <li><a href="#section1">section1</a></li>
-    </ul>
-  </li>
 </ul>
 
 <h1 id="NAME">NAME</h1>
 
-<p>htmlcrossref - Test HTML cross reference links</p>
+<p>htmldir - Test --htmldir feature</p>
 
 <h1 id="LINKS">LINKS</h1>
 
-<p><a href="#section1">&quot;section1&quot;</a></p>
+<pre><code>  Verbatim B&lt;means&gt; verbatim.</code></pre>
 
-<p><a href="/[RELCURRENTWORKINGDIRECTORY]/t/htmllink.html#section-2">&quot;section 2&quot; in htmllink</a></p>
+<p>Normal text, a <a>link</a> to nowhere,</p>
 
-<p><a href="#item1">&quot;item1&quot;</a></p>
+<p>a link to <a href="/[RELCURRENTWORKINGDIRECTORY]/testdir/test.lib/var-copy.html">var-copy</a>,</p>
 
-<p><a href="#non-existant-section">&quot;non existant section&quot;</a></p>
+<p><a href="/[RELCURRENTWORKINGDIRECTORY]/t/htmlescp.html">htmlescp</a>,</p>
 
-<p><a href="/[RELCURRENTWORKINGDIRECTORY]/testdir/test.lib/var-copy.html">var-copy</a></p>
+<p><a href="/[RELCURRENTWORKINGDIRECTORY]/t/feature.html#Another-Head-1">&quot;Another Head 1&quot; in feature</a>,</p>
 
-<p><a href="/[RELCURRENTWORKINGDIRECTORY]/testdir/test.lib/var-copy.html#pod">&quot;$&quot;&quot; in var-copy</a></p>
-
-<p><code>var-copy</code></p>
-
-<p><code>var-copy/$&quot;</code></p>
-
-<p><a href="/[RELCURRENTWORKINGDIRECTORY]/testdir/test.lib/podspec-copy.html#First">&quot;First:&quot; in podspec-copy</a></p>
-
-<p><code>podspec-copy/First:</code></p>
-
-<p><a>notperldoc</a></p>
-
-<h1 id="TARGETS">TARGETS</h1>
-
-<h2 id="section1">section1</h2>
-
-<p>This is section one.</p>
-
-<dl>
-
-<dt id="item1">item1  </dt>
-<dd>
-
-<p>This is item one.</p>
-
-</dd>
-</dl>
+<p>and another <a href="/[RELCURRENTWORKINGDIRECTORY]/t/feature.html#Another-Head-1">&quot;Another Head 1&quot; in feature</a>.</p>
 
 
 </body>

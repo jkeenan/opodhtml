@@ -22,8 +22,8 @@ use Testing qw(
 use Test::More qw(no_plan); # tests =>  1;
 
 my $start_dir = Pod::Html::unixify(Cwd::cwd());
-my $podfile = 'crossref';
-my $testname = 'cross references';
+my $podfile = 'htmldir5';
+my $testname = 'test --htmldir and --htmlroot 5';
 my $templated_expected; { local $/; $templated_expected = <DATA>; }
 
 {
@@ -33,9 +33,10 @@ Data::Dump::pp($f);
 
     my $constructor_args = get_basic_args($tdir, $f);
     my $extra_args = {
-        podpath     => join(':' => ( 't', 'testdir/test.lib',) ),
-        podroot     => $tdir,
-        htmldir     => $tdir,
+      podpath   => join(':' => ('t', 'testdir/test.lib')),
+      podroot   => $f->{cwd},
+      htmldir   => $f->{cwd},
+      htmlroot  => '/',
     };
     map { $constructor_args->{$_} = $extra_args->{$_} } keys %{$extra_args};
 Data::Dump::pp($constructor_args);
@@ -77,56 +78,23 @@ __DATA__
 <ul id="index">
   <li><a href="#NAME">NAME</a></li>
   <li><a href="#LINKS">LINKS</a></li>
-  <li><a href="#TARGETS">TARGETS</a>
-    <ul>
-      <li><a href="#section1">section1</a></li>
-    </ul>
-  </li>
 </ul>
 
 <h1 id="NAME">NAME</h1>
 
-<p>htmlcrossref - Test HTML cross reference links</p>
+<p>htmldir - Test --htmldir feature</p>
 
 <h1 id="LINKS">LINKS</h1>
 
-<p><a href="#section1">&quot;section1&quot;</a></p>
+<p>Normal text, a <a>link</a> to nowhere,</p>
 
-<p><a href="./htmllink.html#section-2">&quot;section 2&quot; in htmllink</a></p>
+<p>a link to <a href="../testdir/test.lib/var-copy.html">var-copy</a>,</p>
 
-<p><a href="#item1">&quot;item1&quot;</a></p>
+<p><a href="./htmlescp.html">htmlescp</a>,</p>
 
-<p><a href="#non-existant-section">&quot;non existant section&quot;</a></p>
+<p><a href="./feature.html#Another-Head-1">&quot;Another Head 1&quot; in feature</a>,</p>
 
-<p><a href="../testdir/test.lib/var-copy.html">var-copy</a></p>
-
-<p><a href="../testdir/test.lib/var-copy.html#pod">&quot;$&quot;&quot; in var-copy</a></p>
-
-<p><code>var-copy</code></p>
-
-<p><code>var-copy/$&quot;</code></p>
-
-<p><a href="../testdir/test.lib/podspec-copy.html#First">&quot;First:&quot; in podspec-copy</a></p>
-
-<p><code>podspec-copy/First:</code></p>
-
-<p><a>notperldoc</a></p>
-
-<h1 id="TARGETS">TARGETS</h1>
-
-<h2 id="section1">section1</h2>
-
-<p>This is section one.</p>
-
-<dl>
-
-<dt id="item1">item1  </dt>
-<dd>
-
-<p>This is item one.</p>
-
-</dd>
-</dl>
+<p>and another <a href="./feature.html#Another-Head-1">&quot;Another Head 1&quot; in feature</a>.</p>
 
 
 </body>

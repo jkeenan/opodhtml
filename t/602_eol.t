@@ -1,5 +1,4 @@
-#!./perl -w
-
+# -*- perl -*-
 use Cwd;
 use Pod::Html qw( pod2html );
 use File::Temp qw( tempdir );

@@ -15,6 +15,11 @@ t/007_pod2html.t
 t/201_crossref.t
 t/202_crossref.t
 t/203_crossref.t
+t/301_htmldir.t
+t/302_htmldir.t
+t/303_htmldir.t
+t/304_htmldir.t
+t/305_htmldir.t
 t/351_htmlescp.t
 t/352_htmllink.t
 t/353_htmlview.t
@@ -45,9 +50,3 @@ t/poderr.pod
 t/podnoerr.pod
 testdir/perlpodspec-copy.pod
 testdir/perlvar-copy.pod
-tmp/cache.t
-tmp/htmldir1.t
-tmp/htmldir2.t
-tmp/htmldir3.t
-tmp/htmldir4.t
-tmp/htmldir5.t

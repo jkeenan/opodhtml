@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w                                         # -*- perl -*-
+# -*- perl -*-
 use strict;
 use Data::Dump;
 use Carp;

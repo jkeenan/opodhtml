@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w                                         # -*- perl -*-
+# -*- perl -*-
 
 BEGIN {
     die "Run me from outside the t/ directory, please" unless -d 't';
