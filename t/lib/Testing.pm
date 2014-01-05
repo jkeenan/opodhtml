@@ -8,14 +8,23 @@ our (@ISA, @EXPORT_OK);
     read_cachefile
     read_cachefile_with_pages
     get_expected_pages
+    initialize_testing_directory
+    get_files_and_dirs
+    get_basic_args
+    get_expect_and_result
+    identify_diff
+    print_differences
 );
 
 use Carp;
-#use Config;
-#use File::Spec;
-#use File::Spec::Unix;
-#use Getopt::Long;
-#use locale; # make \w work right in non-ASCII lands
+require Config;
+use File::Copy;
+use File::Path qw( make_path );
+use File::Spec;
+use File::Temp qw( tempdir );
+use Pod::Html::Auxiliary qw(
+    unixify
+);
 
 =head1 NAME
 
@@ -141,6 +150,138 @@ sub get_expected_pages {
         <*.pod>;
     chdir($tdir) or croak "Unable to change back to testing directory $tdir";
     return \%expected_pages;
+}
+
+=pod
+
+    $tdir = initialize_testing_directory($start_dir, $podfile);
+
+=cut
+
+sub initialize_testing_directory {
+    my ($start_dir, $podfile) = @_;
+    my $tdir = tempdir( CLEANUP => 1 );
+    chdir $tdir or croak "Unable to change to tempdir";
+    make_path('testdir/test.lib', 't', {
+        verbose => 0,
+        mode => 0755,
+    });
+    copy("$start_dir/testdir/perlpodspec-copy.pod", 'testdir/test.lib/podspec-copy.pod')
+        or croak "Could not copy perlpodspec-copy";
+    copy("$start_dir/testdir/perlvar-copy.pod", 'testdir/test.lib/var-copy.pod')
+        or croak "Could not copy perlvar-copy!";
+    copy "$start_dir/t/$podfile.pod" => "$tdir/t/"
+        or croak "Unable to copy $podfile.pod";
+    return $tdir;
+}
+
+=pod
+
+    $f = get_files_and_dirs($podfile);
+
+=cut
+
+sub get_files_and_dirs {
+    my $podfile = shift;
+    croak "Must provide stem of basename of pod file" unless $podfile;
+    my $cwd = unixify( Cwd::cwd() );
+    my ($vol, $dir) = File::Spec->splitpath($cwd, 1);
+    my @dirs = File::Spec->splitdir($dir);
+    shift @dirs if $dirs[0] eq '';
+    my $relcwd = join '/', @dirs;
+
+    my $new_dir  = File::Spec->catdir($dir, "t");
+    my $infile   = File::Spec->catpath($vol, $new_dir, "$podfile.pod");
+    my $outfile  = File::Spec->catpath($vol, $new_dir, "$podfile.html");
+    return {
+        volume      => $vol,
+        cwd         => $cwd,
+        relcwd      => $relcwd,
+        infile      => $infile,
+        outfile     => $outfile,
+    };
+}
+
+=pod
+
+    $constructor_args = get_basic_args($tdir, $f);
+
+=cut
+
+sub get_basic_args {
+    my ($tdir, $f) = @_;
+    return {
+      infile      => $f->{infile},
+      outfile     => $f->{outfile},
+      podpath     => 't',
+      htmlroot    => '/',
+      podroot     => $tdir,
+      quiet       => 1,
+    };
+}
+
+=pod
+
+    ($expect, $result) = get_expect_and_result($f);
+
+=cut
+
+sub get_expect_and_result {
+    my ($f, $expect) = @_;
+    $f->{cwd} =~ s|\/$||;
+    my $result;
+    {
+        $expect =~ s/\[PERLADMIN\]/$Config::Config{perladmin}/;
+        $expect =~ s/\[RELCURRENTWORKINGDIRECTORY\]/$f->{relcwd}/g;
+        $expect =~ s/\[ABSCURRENTWORKINGDIRECTORY\]/$f->{cwd}/g;
+        if (ord("A") == 193) { # EBCDIC.
+            $expect =~ s/item_mat_3c_21_3e/item_mat_4c_5a_6e/;
+        }
+        local $/;
+        open my $IN, $f->{outfile} or die "cannot open $f->{outfile}: $!";
+        $result = <$IN>;
+        close $IN or die "cannot close $f->{outfile}: $!";
+    }
+    return ($expect, $result);
+}
+
+=pod
+
+    ($diff, $diffopt) = identify_diff();
+
+=cut
+
+sub identify_diff {
+    my $diff = '/bin/diff';
+    -x $diff or $diff = '/usr/bin/diff';
+    -x $diff or $diff = undef;
+    my $diffopt = $diff ? $^O =~ m/(linux|darwin)/ ? '-u' : '-c'
+                        : '';
+    $diff = 'fc/n' if $^O =~ /^MSWin/;
+    $diff = 'differences' if $^O eq 'VMS';
+    return ($diff, $diffopt);
+}
+
+=pod
+
+    print_differences($podfile, $expect, $diff, $diffopt, $outfile);
+
+=cut
+
+sub print_differences {
+    my ($podfile, $expect, $diff, $diffopt, $outfile) = @_;
+    my $expectfile = "${podfile}_expected.tmp";
+print STDERR "expectfile: $expectfile\n";
+    open my $TMP, ">", $expectfile
+        or die "Unable to open for writing: $!";
+    print $TMP $expect;
+    close $TMP or die "Unable to close after writing: $!";
+    open my $DIFF_FH, "$diff $diffopt $expectfile $outfile |"
+        or die "Unable to open to diff: $!";
+    print STDERR "# $_" while <$DIFF_FH>;
+    close $DIFF_FH;
+    unlink $expectfile;
+    return 1;
 }
 
 1;

@@ -3,79 +3,53 @@ use strict;
 use Data::Dump;
 use Carp;
 use Cwd;
-require Config;
 use File::Copy;
-use File::Path qw( make_path );
 use File::Spec;
 use File::Spec::Unix;
-use File::Temp qw( tempdir );
 use Pod::Html ();
 use Pod::Html::Auxiliary qw(
     unixify
 );
 use lib qw( t/lib );
+use Testing qw(
+    initialize_testing_directory
+    get_files_and_dirs
+    get_basic_args
+    get_expect_and_result
+    identify_diff
+    print_differences
+);
 use Test::More qw(no_plan); # tests =>  1;
 
 my $start_dir = Pod::Html::unixify(Cwd::cwd());
 my $testname = 'cross references';
-{
-    my $tdir = tempdir( CLEANUP => 1 );
-    chdir $tdir or croak "Unable to change to tempdir";
-    make_test_dir($start_dir);
-    my $podfile = 'crossref';
-    copy "$start_dir/t/$podfile.pod" => "$tdir/t/"
-        or croak "Unable to copy $podfile.pod";
+my $podfile = 'crossref';
+my $templated_expected; { local $/; $templated_expected = <DATA>; }
 
+{
+    my $tdir = initialize_testing_directory($start_dir, $podfile);
     my $f = get_files_and_dirs($podfile);
 Data::Dump::pp($f);
 
-    my $constructor_args = {
-        infile      => $f->{infile},
-        outfile     => $f->{outfile},
-#        podpath         => 't',
-        htmlroot    => '/',
-#        podroot         => $cwd,
-        podpath     => join(':' => (
-                        File::Spec::Unix->catdir($f->{relcwd}, 't'),
-                        File::Spec::Unix->catdir($f->{relcwd}, 'testdir/test.lib'),
-                       ) ),
-        podroot     => File::Spec::Unix->catpath($f->{volume}, '/', ''),
-        quiet       => 1,
+    my $constructor_args = get_basic_args($tdir, $f);
+    my $extra_args = {
+        podpath   => join(':' => (
+            File::Spec::Unix->catdir($f->{relcwd}, 't'),
+            File::Spec::Unix->catdir($f->{relcwd}, 'testdir/test.lib'),
+        ) ),
+        podroot   => File::Spec::Unix->catpath($f->{volume}, '/', ''),
     };
+    map { $constructor_args->{$_} = $extra_args->{$_} } keys %{$extra_args};
 Data::Dump::pp($constructor_args);
 
     ok(Pod::Html::run($constructor_args), "Pod::Html methods completed");
 
-    $f->{cwd} =~ s|\/$||;
-    my ($expect, $result);
-    {
-        local $/;
-        $expect = <DATA>;
-        $expect =~ s/\[PERLADMIN\]/$Config::Config{perladmin}/;
-        $expect =~ s/\[RELCURRENTWORKINGDIRECTORY\]/$f->{relcwd}/g;
-        $expect =~ s/\[ABSCURRENTWORKINGDIRECTORY\]/$f->{cwd}/g;
-        if (ord("A") == 193) { # EBCDIC.
-            $expect =~ s/item_mat_3c_21_3e/item_mat_4c_5a_6e/;
-        }
-        open my $IN, $f->{outfile} or die "cannot open $f->{outfile}: $!";
-        $result = <$IN>;
-        close $IN or die "cannot close $f->{outfile}: $!";
-    }
+    my ($expect, $result) = get_expect_and_result($f, $templated_expected);
     my ($diff, $diffopt) = identify_diff();
     if ($diff) {
-        ok($expect eq $result, $testname) or do {
-            my $expectfile = "${podfile}_expected.tmp";
-print STDERR "expectfile: $expectfile\n";
-            open my $TMP, ">", $expectfile
-                or die "Unable to open for writing: $!";
-            print $TMP $expect;
-            close $TMP or die "Unable to close after writing: $!";
-            open my $DIFF_FH, "$diff $diffopt $expectfile $f->{outfile} |"
-                or die "Unable to open to diff: $!";
-            print STDERR "# $_" while <$DIFF_FH>;
-            close $DIFF_FH;
-            unlink $expectfile;
-        };
+        ok($expect eq $result, $testname)
+            or print_differences(
+                $podfile, $expect, $diff, $diffopt, $f->{outfile});
     }
     else {
         # This is fairly evil, but lets us get detailed failure modes
@@ -87,52 +61,6 @@ print STDERR "expectfile: $expectfile\n";
 
     chdir $start_dir or croak "Unable to change back to starting place";
 }
-
-sub get_files_and_dirs {
-    my $podfile = shift;
-    croak "Must provide stem of basename of pod file" unless $podfile;
-    my $cwd = unixify( Cwd::cwd() );
-    my ($vol, $dir) = File::Spec->splitpath($cwd, 1);
-    my @dirs = File::Spec->splitdir($dir);
-    shift @dirs if $dirs[0] eq '';
-    my $relcwd = join '/', @dirs;
-
-    my $new_dir  = File::Spec->catdir($dir, "t");
-    my $infile   = File::Spec->catpath($vol, $new_dir, "$podfile.pod");
-    my $outfile  = File::Spec->catpath($vol, $new_dir, "$podfile.html");
-    return {
-        volume      => $vol,
-        cwd         => $cwd,
-        relcwd      => $relcwd,
-        infile      => $infile,
-        outfile     => $outfile,
-    };
-}
-
-sub identify_diff {
-    my $diff = '/bin/diff';
-    -x $diff or $diff = '/usr/bin/diff';
-    -x $diff or $diff = undef;
-    my $diffopt = $diff ? $^O =~ m/(linux|darwin)/ ? '-u' : '-c'
-                        : '';
-    $diff = 'fc/n' if $^O =~ /^MSWin/;
-    $diff = 'differences' if $^O eq 'VMS';
-    return ($diff, $diffopt);
-}
-
-sub make_test_dir {
-    my ($start_dir) = @_;
-    make_path('testdir/test.lib', 't', {
-        verbose => 0,
-        mode => 0755,
-    });
-    copy("$start_dir/testdir/perlpodspec-copy.pod", 'testdir/test.lib/podspec-copy.pod')
-        or croak "Could not copy perlpodspec-copy";
-    copy("$start_dir/testdir/perlvar-copy.pod", 'testdir/test.lib/var-copy.pod')
-        or croak "Could not copy perlvar-copy!";
-    return 1;
-}
-
 
 __DATA__
 <?xml version="1.0" ?>
