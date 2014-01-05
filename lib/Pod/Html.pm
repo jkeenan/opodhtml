@@ -264,6 +264,22 @@ sub process_options {
     else {
         $opts = {};
     }
+
+    for my $o ( qw| backlink header index poderrors quiet recurse verbose | )
+    {
+        my $no = "no$o";
+        my $nohyphen = "no-$o";
+        if (
+            ( exists $opts->{$no} and defined $opts->{$no} and $opts->{$no} )
+                or
+            ( exists $opts->{$nohyphen} and defined $opts->{$nohyphen} and $opts->{$nohyphen} )
+        ) {
+            $opts->{$o} = 0;
+            delete $opts->{$no} if exists $opts->{$no};
+            delete $opts->{$nohyphen} if exists $opts->{$nohyphen};
+        }
+    }
+
     # Declare intermediate hash to hold cleaned-up options
     my %h = ();
     @{$h{Podpath}}  = split(":", $opts->{podpath}) if defined $opts->{podpath};
