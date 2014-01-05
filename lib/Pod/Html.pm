@@ -2,10 +2,11 @@ package Pod::Html;
 use strict;
 require Exporter;
 
-use vars qw($VERSION @ISA @EXPORT);
+use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 $VERSION = 1.21;
 @ISA = qw(Exporter);
 @EXPORT = qw(pod2html);
+@EXPORT_OK = qw(run);
 
 use Carp;
 use Config;
@@ -630,6 +631,23 @@ sub get {
     return unless (exists $self->{$element} and defined $self->{$element});
     return $self->{$element};
 }
+
+sub run {
+    my $constructor_args = shift;
+    croak "Must pass hashref to Pod::Html::run()"
+        unless (defined $constructor_args and ref($constructor_args) eq 'HASH');
+    my ($p2h, $parser, $output, $rv);
+    $p2h = Pod::Html->new();
+    $p2h->process_options( $constructor_args );
+    $p2h->cleanup_elements();
+    $rv = $p2h->generate_pages_cache();
+    $parser = $p2h->prepare_parser();
+    $p2h->prepare_html_components($parser);
+    $output = $p2h->prepare_output($parser);
+    $rv = $p2h->write_html($output);
+    return $rv;
+}
+
 
 1;
 

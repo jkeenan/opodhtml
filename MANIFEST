@@ -12,6 +12,7 @@ t/004_generate_pages_cache_podpath.t
 t/005_prepare_parser_html_components.t
 t/006_prepare_output_write_html.t
 t/007_pod2html.t
+t/200_crossref.t
 t/601_anchorify.t
 t/602_eol.t
 t/603_relativize_url.t
@@ -29,13 +30,13 @@ t/htmldir5.pod
 t/htmlescp.pod
 t/htmllink.pod
 t/htmlview.pod
+t/lib/Testing.pm
 t/pod2html-lib.pl
 t/poderr.pod
 t/podnoerr.pod
 testdir/perlpodspec-copy.pod
 testdir/perlvar-copy.pod
 tmp/cache.t
-tmp/crossref.t
 tmp/crossref2.t
 tmp/crossref3.t
 tmp/feature.t
