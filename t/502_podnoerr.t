@@ -22,8 +22,8 @@ use Testing qw(
 use Test::More qw(no_plan); # tests =>  1;
 
 my $start_dir = Pod::Html::unixify(Cwd::cwd());
-my $podfile = 'htmlescp';
-my $testname = 'html escape';
+my $podfile = 'podnoerr';
+my $testname = 'pod error section';
 my $templated_expected; { local $/; $templated_expected = <DATA>; }
 
 {
@@ -32,7 +32,7 @@ my $templated_expected; { local $/; $templated_expected = <DATA>; }
 Data::Dump::pp($f);
 
     my $constructor_args = get_basic_args($tdir, $f);
-    my $extra_args = {};
+    my $extra_args = { nopoderrors => 1 };
     map { $constructor_args->{$_} = $extra_args->{$_} } keys %{$extra_args};
 Data::Dump::pp($constructor_args);
 
@@ -70,20 +70,25 @@ __DATA__
 
 <ul id="index">
   <li><a href="#NAME">NAME</a></li>
-  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
 </ul>
 
 <h1 id="NAME">NAME</h1>
 
-<p>Escape Sequences Test</p>
+<p>Test POD ERROR section</p>
 
-<h1 id="DESCRIPTION">DESCRIPTION</h1>
+<ul>
 
-<p>I am a stupid fool who puts naked &lt; &amp; &gt; characters in my POD instead of escaping them as &lt; and &gt;.</p>
+<p>This text is not allowed</p>
 
-<p>Here is some <b>bold</b> text, some <i>italic</i> plus <i>/etc/fstab</i> file and something that looks like an &lt;html&gt; tag. This is some <code>$code($arg1)</code>.</p>
+<p>*</p>
 
-<p>Some numeric escapes: P e r l</p>
+<p>The wiz item.</p>
+
+<p>*</p>
+
+<p>The waz item.</p>
+
+</ul>
 
 
 </body>

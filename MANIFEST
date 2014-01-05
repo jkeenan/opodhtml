@@ -18,6 +18,8 @@ t/203_crossref.t
 t/351_htmlescp.t
 t/352_htmllink.t
 t/353_htmlview.t
+t/501_poderr.t
+t/502_podnoerr.t
 t/601_anchorify.t
 t/602_eol.t
 t/603_relativize_url.t
@@ -49,5 +51,3 @@ tmp/htmldir2.t
 tmp/htmldir3.t
 tmp/htmldir4.t
 tmp/htmldir5.t
-tmp/poderr.t
-tmp/podnoerr.t
