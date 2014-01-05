@@ -18,6 +18,8 @@ t/203_crossref.t
 t/351_htmlescp.t
 t/352_htmllink.t
 t/353_htmlview.t
+t/401_feature.t
+t/402_feature.t
 t/501_poderr.t
 t/502_podnoerr.t
 t/601_anchorify.t
@@ -44,8 +46,6 @@ t/podnoerr.pod
 testdir/perlpodspec-copy.pod
 testdir/perlvar-copy.pod
 tmp/cache.t
-tmp/feature.t
-tmp/feature2.t
 tmp/htmldir1.t
 tmp/htmldir2.t
 tmp/htmldir3.t
