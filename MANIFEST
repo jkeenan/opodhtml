@@ -12,7 +12,12 @@ t/004_generate_pages_cache_podpath.t
 t/005_prepare_parser_html_components.t
 t/006_prepare_output_write_html.t
 t/007_pod2html.t
-t/200_crossref.t
+t/201_crossref.t
+t/202_crossref.t
+t/203_crossref.t
+t/351_htmlescp.t
+t/352_htmllink.t
+t/353_htmlview.t
 t/601_anchorify.t
 t/602_eol.t
 t/603_relativize_url.t
@@ -37,8 +42,6 @@ t/podnoerr.pod
 testdir/perlpodspec-copy.pod
 testdir/perlvar-copy.pod
 tmp/cache.t
-tmp/crossref2.t
-tmp/crossref3.t
 tmp/feature.t
 tmp/feature2.t
 tmp/htmldir1.t
@@ -46,8 +49,5 @@ tmp/htmldir2.t
 tmp/htmldir3.t
 tmp/htmldir4.t
 tmp/htmldir5.t
-tmp/htmlescp.t
-tmp/htmllink.t
-tmp/htmlview.t
 tmp/poderr.t
 tmp/podnoerr.t

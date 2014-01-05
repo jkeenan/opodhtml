@@ -1,29 +1,63 @@
 #!/usr/bin/perl -w                                         # -*- perl -*-
-
-BEGIN {
-    require "t/pod2html-lib.pl";
-}
-
-END {
-    rem_test_dir();
-}
-
 use strict;
+use Data::Dump;
+use Carp;
 use Cwd;
-use Test::More tests => 1;
+use File::Copy;
+use File::Spec;
+use File::Spec::Unix;
+use Pod::Html ();
+use Pod::Html::Auxiliary qw(
+    unixify
+);
+use lib qw( t/lib );
+use Testing qw(
+    initialize_testing_directory
+    get_files_and_dirs
+    get_basic_args
+    get_expect_and_result
+    identify_diff
+    print_differences
+);
+use Test::More qw(no_plan); # tests =>  1;
 
-SKIP: {
-    my $output = make_test_dir();
-    skip "$output", 1 if $output;
-    
-    my $cwd = cwd();
+my $start_dir = Pod::Html::unixify(Cwd::cwd());
+my $podfile = 'crossref';
+my $testname = 'cross references';
+my $templated_expected; { local $/; $templated_expected = <DATA>; }
 
-    convert_n_test("crossref", "cross references", 
-     "--podpath=t:testdir/test.lib",
-     "--podroot=$cwd",
-     "--htmlroot=$cwd",
-     "--quiet",
-    );
+{
+    my $tdir = initialize_testing_directory($start_dir, $podfile);
+    my $f = get_files_and_dirs($podfile);
+Data::Dump::pp($f);
+
+    my $constructor_args = get_basic_args($tdir, $f);
+    my $extra_args = {
+        podpath     => join(':' => ( 't', 'testdir/test.lib',) ),
+        podroot     => $tdir,
+        htmlroot    => $tdir,
+    };
+    map { $constructor_args->{$_} = $extra_args->{$_} } keys %{$extra_args};
+Data::Dump::pp($constructor_args);
+
+    ok(Pod::Html::run($constructor_args), "Pod::Html methods completed");
+
+    my ($expect, $result) = get_expect_and_result($f, $templated_expected);
+    my ($diff, $diffopt) = identify_diff();
+    if ($diff) {
+        ok($expect eq $result, $testname)
+            or print_differences(
+                $podfile, $expect, $diff, $diffopt, $f->{outfile});
+    }
+    else {
+        # This is fairly evil, but lets us get detailed failure modes
+        # anywhere that we've failed to identify a diff program.
+        is($expect, $result, $testname);
+    }
+
+    pass($0);
+
+    chdir $start_dir or croak "Unable to change back to starting place";
 }
 
 __DATA__

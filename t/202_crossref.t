@@ -22,8 +22,8 @@ use Testing qw(
 use Test::More qw(no_plan); # tests =>  1;
 
 my $start_dir = Pod::Html::unixify(Cwd::cwd());
-my $testname = 'cross references';
 my $podfile = 'crossref';
+my $testname = 'cross references';
 my $templated_expected; { local $/; $templated_expected = <DATA>; }
 
 {
@@ -33,11 +33,9 @@ Data::Dump::pp($f);
 
     my $constructor_args = get_basic_args($tdir, $f);
     my $extra_args = {
-        podpath   => join(':' => (
-            File::Spec::Unix->catdir($f->{relcwd}, 't'),
-            File::Spec::Unix->catdir($f->{relcwd}, 'testdir/test.lib'),
-        ) ),
-        podroot   => File::Spec::Unix->catpath($f->{volume}, '/', ''),
+        podpath     => join(':' => ( 't', 'testdir/test.lib',) ),
+        podroot     => $tdir,
+        htmldir     => $tdir,
     };
     map { $constructor_args->{$_} = $extra_args->{$_} } keys %{$extra_args};
 Data::Dump::pp($constructor_args);
@@ -94,21 +92,21 @@ __DATA__
 
 <p><a href="#section1">&quot;section1&quot;</a></p>
 
-<p><a href="/[RELCURRENTWORKINGDIRECTORY]/t/htmllink.html#section-2">&quot;section 2&quot; in htmllink</a></p>
+<p><a href="./htmllink.html#section-2">&quot;section 2&quot; in htmllink</a></p>
 
 <p><a href="#item1">&quot;item1&quot;</a></p>
 
 <p><a href="#non-existant-section">&quot;non existant section&quot;</a></p>
 
-<p><a href="/[RELCURRENTWORKINGDIRECTORY]/testdir/test.lib/var-copy.html">var-copy</a></p>
+<p><a href="../testdir/test.lib/var-copy.html">var-copy</a></p>
 
-<p><a href="/[RELCURRENTWORKINGDIRECTORY]/testdir/test.lib/var-copy.html#pod">&quot;$&quot;&quot; in var-copy</a></p>
+<p><a href="../testdir/test.lib/var-copy.html#pod">&quot;$&quot;&quot; in var-copy</a></p>
 
 <p><code>var-copy</code></p>
 
 <p><code>var-copy/$&quot;</code></p>
 
-<p><a href="/[RELCURRENTWORKINGDIRECTORY]/testdir/test.lib/podspec-copy.html#First">&quot;First:&quot; in podspec-copy</a></p>
+<p><a href="../testdir/test.lib/podspec-copy.html#First">&quot;First:&quot; in podspec-copy</a></p>
 
 <p><code>podspec-copy/First:</code></p>
 
